@@ -1,0 +1,2 @@
+# .github
+Locus organization repository
