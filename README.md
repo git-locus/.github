@@ -1,2 +1,3 @@
-# .github
-Locus organization repository
+# Locus
+
+Stay tuned 💡
