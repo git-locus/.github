@@ -88,8 +88,8 @@ jobs:
       - name: Docker login
         run: |
           echo "${{ secrets.CONTAINER_REGISTRY_PASSWORD }}" | \
-            docker login "${{ vars.REGISTRY_LOGIN_SERVER }}" \
-              -u "${{ vars.CONTAINER_REGISTRY_USERNAME }}" \
+            docker login "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              -u "${{ secrets.CONTAINER_REGISTRY_USERNAME }}" \
               --password-stdin
 
       - name: Build and push image
@@ -97,7 +97,7 @@ jobs:
         working-directory: build-context
         env:
           SHORT_SHA: ${{ github.event.client_payload.source_sha || github.sha }}
-          IMAGE_URI: ${{ vars.IMAGE_REGISTRY }}/${{ vars.IMAGE_NAME }}
+          IMAGE_URI: ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}
         run: |
           TAG="${SHORT_SHA:0:12}"
           FULL_URI="${IMAGE_URI}:${TAG}"
@@ -139,7 +139,7 @@ jobs:
           # Il Dockerfile nel bundle fa solo pull dell'immagine già builddata:
           # la build vera è già avvenuta nel passo precedente.
           cat > sync-bundle/Dockerfile <<EOF
-          FROM ${{ vars.IMAGE_REGISTRY }}/${{ vars.IMAGE_NAME }}:${IMAGE_TAG}
+          FROM ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}:${IMAGE_TAG}
           EOF
 
           cp manifest.json sync-bundle/manifest.json
