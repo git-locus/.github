@@ -31,21 +31,16 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
-  # LocalStack – emulazione S3 (e altri servizi AWS) in locale
+  # Azurite – emulatore Azure Blob Storage in locale
   # ---------------------------------------------------------------------------
-  localstack:
-    image: localstack/localstack:latest
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
     restart: unless-stopped
-    environment:
-      SERVICES: s3
-      AWS_DEFAULT_REGION: eu-north-1
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
+    command: azurite-blob --blobHost 0.0.0.0
     volumes:
-      - localstack_data:/var/lib/localstack
-      - ./scripts/localstack-init.sh:/etc/localstack/init/ready.d/init.sh:ro,z
+      - azurite_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test: ["CMD", "nc", "-z", "localhost", "10000"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -77,10 +72,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-locus}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-      AWS_DEFAULT_REGION: eu-north-1
-      AWS_ENDPOINT_URL: http://localstack:4566
+      AZURE_ACCOUNT_NAME: devstoreaccount1
+      AZURE_ACCOUNT_KEY: "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
       PATH: /app/.venv/bin:/uv_bin:/usr/local/bin:/usr/bin:/bin
       VIRTUAL_ENV: /app/.venv
     # Copia uv nell'apposito volume (solo se non già presente), poi sync e runserver
@@ -95,7 +88,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      localstack:
+      azurite:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
@@ -142,7 +135,7 @@ services:
 
 volumes:
   db_data:
-  localstack_data:
+  azurite_data:
   static_files:
   api_venv:
   api_uv_bin:
