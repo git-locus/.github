@@ -68,6 +68,9 @@ RUN apk add --no-cache \
         nodejs \
         supervisor \
         curl \
+        openssl \
+        gettext \
+    && pip install --no-cache-dir certbot \
     && rm -rf /var/cache/apk/*
 
 # --- Utente non-root per Next.js ---
@@ -94,17 +97,22 @@ COPY --from=client-builder --chown=nextjs:nodejs /client/.next/static ./.next/st
 RUN mkdir -p .next && chown nextjs:nodejs .next
 
 # ---- Nginx ----
-COPY .github/nginx/nginx.fullstack.conf /etc/nginx/nginx.conf
+COPY .github/nginx/nginx.fullstack.conf /etc/nginx/nginx.template.conf
+COPY .github/nginx/nginx-acme.conf /etc/nginx/nginx-acme.conf
 
 # ---- Supervisor ----
 COPY .github/supervisord.conf /etc/supervisord.conf
 
+# ---- Init HTTPS ----
+COPY .github/scripts/init-https.sh /usr/local/bin/init-https.sh
+RUN chmod +x /usr/local/bin/init-https.sh
+
 # ---- Static files (condivisi tra Django e nginx) ----
 RUN mkdir -p /static && chown nobody:nobody /static
 
-EXPOSE 8080
+EXPOSE 8080 8081
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD curl -f http://localhost:8080/ || exit 1
+    CMD curl -fk https://localhost:8081/ || curl -f http://localhost:8080/ || exit 1
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/usr/local/bin/init-https.sh"]
