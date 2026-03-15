@@ -1,23 +1,38 @@
-# Workflow A – Locus deploy pipeline
+# Workflow A – Locus deploy pipeline (reusable)
 #
 # Costruisce l'immagine fullstack, crea il sync-bundle e lo pusha
 # nel branch sync/<run-id>-<sha> di docker2azure4student.
 # Il Workflow B di quella repo intercetta il push e deploy su Azure.
 #
 # Trigger:
-#   - repository_dispatch da api o client (push su main)
-#   - workflow_dispatch (deploy manuale dalla GitHub UI)
+#   - workflow_call  → chiamato da api/.github e client/.github su push main
+#   - workflow_dispatch → deploy manuale dalla GitHub UI di questa repo
 #
-# Tutti i secret vivono in questa repo (.github).
-# Le repo api e client hanno solo DEPLOY_PAT (PAT contents:write su .github).
+# Secrets: tutti a livello di organizzazione git-locus (nessuna duplicazione).
+#   INFRA_REPO_PAT              Fine-grained PAT contents:write su docker2azure4student
+#   REGISTRY_LOGIN_SERVER       es. ghcr.io
+#   IMAGE_REGISTRY              es. ghcr.io/git-locus
+#   IMAGE_NAME                  es. locus
+#   CONTAINER_REGISTRY_USERNAME Username del registry
+#   CONTAINER_REGISTRY_PASSWORD Token/password del registry
 
 name: Build & sync to Azure infra
 
 on:
-  repository_dispatch:
-    types:
-      - api-updated
-      - client-updated
+  # Chiamato direttamente da api e client su push main
+  workflow_call:
+    inputs:
+      source_repo:
+        description: 'Repo che ha triggerato il deploy (api | client)'
+        type: string
+        required: false
+        default: 'unknown'
+      source_sha:
+        description: 'SHA del commit sorgente'
+        type: string
+        required: false
+        default: ''
+  # Deploy manuale dalla GitHub UI
   workflow_dispatch:
     inputs:
       source_repo:
@@ -107,8 +122,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.build.outputs.image_tag }}
         run: |
-          SOURCE_REPO="${{ github.event.client_payload.repo || inputs.source_repo || 'manual' }}"
-          SOURCE_SHA="${{ github.event.client_payload.commit || inputs.source_sha || github.sha }}"
+          SOURCE_REPO="${{ inputs.source_repo || 'manual' }}"
+          SOURCE_SHA="${{ inputs.source_sha || github.sha }}"
           cat > manifest.json <<EOF
           {
             "sourceRepo": "${SOURCE_REPO}",
