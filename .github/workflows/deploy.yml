@@ -43,7 +43,6 @@ on:
 
 permissions:
   contents: read
-  packages: write   # necessario per pushare su GHCR
 
 env:
   INFRA_REPO: git-locus/docker2azure4student   # adatta se la repo ha nome diverso
