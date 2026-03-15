@@ -32,8 +32,8 @@ ARG NODE_VERSION=18
 FROM node:${NODE_VERSION}-alpine AS client-deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /client
-COPY client/package.json client/package-lock.json* ./
-RUN npm ci
+COPY client/package.json ./
+RUN npm install
 
 # -----------------------------------------------------------------------------
 # Stage 2 – Client: compila Next.js in modalità standalone
