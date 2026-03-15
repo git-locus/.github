@@ -42,7 +42,7 @@ on:
         default: 'manual'
 
 permissions:
-  contents: read
+  contents: none
 
 env:
   INFRA_REPO: git-locus/docker2azure4student   # adatta se la repo ha nome diverso
@@ -60,6 +60,8 @@ jobs:
       - name: Checkout .github repo
         uses: actions/checkout@v4
         with:
+          repository: git-locus/.github
+          token: ${{ secrets.INFRA_REPO_PAT }}
           path: dot-github
 
       # Checkout separato di api e client (sono repo indipendenti)
