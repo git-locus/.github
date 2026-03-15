@@ -1,38 +1,31 @@
-# Workflow A – Locus deploy pipeline (reusable)
+# Workflow A – Locus deploy pipeline
 #
 # Costruisce l'immagine fullstack, crea il sync-bundle e lo pusha
 # nel branch sync/<run-id>-<sha> di docker2azure4student.
 # Il Workflow B di quella repo intercetta il push e deploy su Azure.
 #
 # Trigger:
-#   - workflow_call  → chiamato da api/.github e client/.github su push main
-#   - workflow_dispatch → deploy manuale dalla GitHub UI di questa repo
+#   - repository_dispatch → chiamato da api e client su push main
+#   - workflow_dispatch   → deploy manuale dalla GitHub UI
 #
-# Secrets: tutti a livello di organizzazione git-locus (nessuna duplicazione).
-#   DEPLOY_PAT                           Fine-grained PAT contents:write su docker2azure4student
-#   REGISTRY_LOGIN_SERVER       es. ghcr.io
-#   IMAGE_REGISTRY              es. ghcr.io/git-locus
-#   IMAGE_NAME                  es. locus
-#   CONTAINER_REGISTRY_USERNAME Username del registry
-#   CONTAINER_REGISTRY_PASSWORD Token/password del registry
+# Secret e variabili: tutti in QUESTA repo (.github) → Settings → Secrets / Variables
+#
+#   Secrets:
+#     DEPLOY_PAT                  PAT con contents:write su docker2azure4student
+#                                 e repo:write su .github, api, client
+#     CONTAINER_REGISTRY_PASSWORD Token/password per il container registry
+#
+#   Variables (Settings → Variables → Actions):
+#     REGISTRY_LOGIN_SERVER       es. ghcr.io
+#     IMAGE_REGISTRY              es. ghcr.io/git-locus
+#     IMAGE_NAME                  es. locus
+#     CONTAINER_REGISTRY_USERNAME Username del registry
 
 name: Build & sync to Azure infra
 
 on:
-  # Chiamato direttamente da api e client su push main
-  workflow_call:
-    inputs:
-      source_repo:
-        description: 'Repo che ha triggerato il deploy (api | client)'
-        type: string
-        required: false
-        default: 'unknown'
-      source_sha:
-        description: 'SHA del commit sorgente'
-        type: string
-        required: false
-        default: ''
-  # Deploy manuale dalla GitHub UI
+  repository_dispatch:
+    types: [deploy]
   workflow_dispatch:
     inputs:
       source_repo:
@@ -42,10 +35,11 @@ on:
         default: 'manual'
 
 permissions:
-  contents: none
+  contents: read
+  packages: write
 
 env:
-  INFRA_REPO: git-locus/docker2azure4student   # adatta se la repo ha nome diverso
+  INFRA_REPO: git-locus/docker2azure4student
   INFRA_REPO_DEFAULT_BRANCH: main
   SYNC_BRANCH_PREFIX: sync
 
@@ -60,8 +54,6 @@ jobs:
       - name: Checkout .github repo
         uses: actions/checkout@v4
         with:
-          repository: git-locus/.github
-          token: ${{ secrets.DEPLOY_PAT }}
           path: dot-github
 
       # Checkout separato di api e client (sono repo indipendenti)
@@ -96,16 +88,16 @@ jobs:
       - name: Docker login
         run: |
           echo "${{ secrets.CONTAINER_REGISTRY_PASSWORD }}" | \
-            docker login "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-              -u "${{ secrets.CONTAINER_REGISTRY_USERNAME }}" \
+            docker login "${{ vars.REGISTRY_LOGIN_SERVER }}" \
+              -u "${{ vars.CONTAINER_REGISTRY_USERNAME }}" \
               --password-stdin
 
       - name: Build and push image
         id: build
         working-directory: build-context
         env:
-          SHORT_SHA: ${{ github.sha }}
-          IMAGE_URI: ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}
+          SHORT_SHA: ${{ github.event.client_payload.source_sha || github.sha }}
+          IMAGE_URI: ${{ vars.IMAGE_REGISTRY }}/${{ vars.IMAGE_NAME }}
         run: |
           TAG="${SHORT_SHA:0:12}"
           FULL_URI="${IMAGE_URI}:${TAG}"
@@ -123,8 +115,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.build.outputs.image_tag }}
         run: |
-          SOURCE_REPO="${{ inputs.source_repo || 'manual' }}"
-          SOURCE_SHA="${{ inputs.source_sha || github.sha }}"
+          SOURCE_REPO="${{ github.event.client_payload.source_repo || inputs.source_repo || 'manual' }}"
+          SOURCE_SHA="${{ github.event.client_payload.source_sha || github.sha }}"
           cat > manifest.json <<EOF
           {
             "sourceRepo": "${SOURCE_REPO}",
@@ -147,7 +139,7 @@ jobs:
           # Il Dockerfile nel bundle fa solo pull dell'immagine già builddata:
           # la build vera è già avvenuta nel passo precedente.
           cat > sync-bundle/Dockerfile <<EOF
-          FROM ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}:${IMAGE_TAG}
+          FROM ${{ vars.IMAGE_REGISTRY }}/${{ vars.IMAGE_NAME }}:${IMAGE_TAG}
           EOF
 
           cp manifest.json sync-bundle/manifest.json
