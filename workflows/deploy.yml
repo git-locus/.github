@@ -1,0 +1,168 @@
+# Workflow A – Locus deploy pipeline
+#
+# Costruisce l'immagine fullstack, crea il sync-bundle e lo pusha
+# nel branch sync/<run-id>-<sha> di docker2azure4student.
+# Il Workflow B di quella repo intercetta il push e deploy su Azure.
+#
+# Trigger:
+#   - repository_dispatch da api o client (push su main automatico)
+#   - workflow_dispatch (deploy manuale da GitHub UI)
+#
+# Secrets richiesti in questa repo:
+#   INFRA_REPO_PAT              Fine-grained PAT con contents:write su docker2azure4student
+#   REGISTRY_LOGIN_SERVER       es. ghcr.io
+#   IMAGE_REGISTRY              es. ghcr.io/git-locus
+#   IMAGE_NAME                  es. locus
+#   CONTAINER_REGISTRY_USERNAME Username del registry
+#   CONTAINER_REGISTRY_PASSWORD Token/password del registry
+
+name: Build & sync to Azure infra
+
+on:
+  # Triggerato da api o client tramite repository_dispatch
+  repository_dispatch:
+    types:
+      - api-updated
+      - client-updated
+  # Deploy manuale dalla GitHub UI
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write   # necessario per pushare su GHCR
+
+env:
+  INFRA_REPO: git-locus/docker2azure4student   # adatta se la repo ha nome diverso
+  INFRA_REPO_DEFAULT_BRANCH: main
+  SYNC_BRANCH_PREFIX: sync
+
+jobs:
+  build-and-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ------------------------------------------------------------------
+      # 1. Checkout dell'intera repo .github con tutte le sotto-repo
+      # ------------------------------------------------------------------
+      - name: Checkout .github repo
+        uses: actions/checkout@v4
+        with:
+          path: dot-github
+
+      # Checkout separato di api e client (sono repo indipendenti)
+      - name: Checkout api repo
+        uses: actions/checkout@v4
+        with:
+          repository: git-locus/api
+          token: ${{ secrets.INFRA_REPO_PAT }}
+          path: api
+
+      - name: Checkout client repo
+        uses: actions/checkout@v4
+        with:
+          repository: git-locus/client
+          token: ${{ secrets.INFRA_REPO_PAT }}
+          path: client
+
+      # ------------------------------------------------------------------
+      # 2. Prepara il contesto di build: metti tutto allo stesso livello
+      #    come si aspetta il Dockerfile (.github/ api/ client/)
+      # ------------------------------------------------------------------
+      - name: Prepare build context
+        run: |
+          mkdir -p build-context
+          cp -r dot-github build-context/.github
+          cp -r api         build-context/api
+          cp -r client      build-context/client
+
+      # ------------------------------------------------------------------
+      # 3. Build e push dell'immagine fullstack
+      # ------------------------------------------------------------------
+      - name: Docker login
+        run: |
+          echo "${{ secrets.CONTAINER_REGISTRY_PASSWORD }}" | \
+            docker login "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              -u "${{ secrets.CONTAINER_REGISTRY_USERNAME }}" \
+              --password-stdin
+
+      - name: Build and push image
+        id: build
+        working-directory: build-context
+        env:
+          SHORT_SHA: ${{ github.sha }}
+          IMAGE_URI: ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}
+        run: |
+          TAG="${SHORT_SHA:0:12}"
+          FULL_URI="${IMAGE_URI}:${TAG}"
+          docker build -f .github/Dockerfile -t "$FULL_URI" -t "${IMAGE_URI}:latest" .
+          docker push "$FULL_URI"
+          docker push "${IMAGE_URI}:latest"
+          echo "image_tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "image_uri=$FULL_URI" >> "$GITHUB_OUTPUT"
+
+      # ------------------------------------------------------------------
+      # 4. Compila il manifest.json
+      # ------------------------------------------------------------------
+      - name: Build manifest
+        id: manifest
+        env:
+          IMAGE_TAG: ${{ steps.build.outputs.image_tag }}
+        run: |
+          cat > manifest.json <<EOF
+          {
+            "sourceRepo": "${{ github.repository }}",
+            "commit":     "${{ github.sha }}",
+            "runId":      "${{ github.run_id }}",
+            "imageTag":   "${IMAGE_TAG}"
+          }
+          EOF
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      # ------------------------------------------------------------------
+      # 5. Crea il sync-bundle con Dockerfile + manifest
+      # ------------------------------------------------------------------
+      - name: Assemble sync-bundle
+        env:
+          IMAGE_TAG: ${{ steps.manifest.outputs.image_tag }}
+        run: |
+          mkdir -p sync-bundle
+
+          # Il Dockerfile nel bundle fa solo pull dell'immagine già builddata:
+          # la build vera è già avvenuta nel passo precedente.
+          cat > sync-bundle/Dockerfile <<EOF
+          FROM ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}:${IMAGE_TAG}
+          EOF
+
+          cp manifest.json sync-bundle/manifest.json
+
+      # ------------------------------------------------------------------
+      # 6. Push del bundle su un branch sync/* di docker2azure4student
+      # ------------------------------------------------------------------
+      - name: Push sync bundle to infra repo
+        env:
+          GH_TOKEN: ${{ secrets.INFRA_REPO_PAT }}
+          IMAGE_TAG: ${{ steps.manifest.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+
+          BRANCH="${SYNC_BRANCH_PREFIX}/${{ github.run_id }}-${IMAGE_TAG}"
+
+          git clone \
+            --depth 1 \
+            --branch "${INFRA_REPO_DEFAULT_BRANCH}" \
+            "https://x-access-token:${GH_TOKEN}@github.com/${INFRA_REPO}.git" \
+            infra-repo
+
+          cd infra-repo
+          git checkout -b "$BRANCH"
+
+          # Copia il bundle (sovrascrive se esistente da run precedenti)
+          cp -r ../sync-bundle ./sync-bundle
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add sync-bundle/
+          git commit -m "chore: sync bundle from ${GITHUB_REPOSITORY}@${IMAGE_TAG} (run ${{ github.run_id }})"
+          git push origin "$BRANCH"
+
+          echo "Pushed sync bundle to ${INFRA_REPO}@${BRANCH}"
