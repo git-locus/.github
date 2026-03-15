@@ -9,7 +9,7 @@
 #   - workflow_dispatch → deploy manuale dalla GitHub UI di questa repo
 #
 # Secrets: tutti a livello di organizzazione git-locus (nessuna duplicazione).
-#   INFRA_REPO_PAT              Fine-grained PAT contents:write su docker2azure4student
+#   DEPLOY_PAT                           Fine-grained PAT contents:write su docker2azure4student
 #   REGISTRY_LOGIN_SERVER       es. ghcr.io
 #   IMAGE_REGISTRY              es. ghcr.io/git-locus
 #   IMAGE_NAME                  es. locus
@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: git-locus/.github
-          token: ${{ secrets.INFRA_REPO_PAT }}
+          token: ${{ secrets.DEPLOY_PAT }}
           path: dot-github
 
       # Checkout separato di api e client (sono repo indipendenti)
@@ -69,14 +69,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: git-locus/api
-          token: ${{ secrets.INFRA_REPO_PAT }}
+          token: ${{ secrets.DEPLOY_PAT }}
           path: api
 
       - name: Checkout client repo
         uses: actions/checkout@v4
         with:
           repository: git-locus/client
-          token: ${{ secrets.INFRA_REPO_PAT }}
+          token: ${{ secrets.DEPLOY_PAT }}
           path: client
 
       # ------------------------------------------------------------------
@@ -157,7 +157,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: Push sync bundle to infra repo
         env:
-          GH_TOKEN: ${{ secrets.INFRA_REPO_PAT }}
+          GH_TOKEN: ${{ secrets.DEPLOY_PAT }}
           IMAGE_TAG: ${{ steps.manifest.outputs.image_tag }}
         run: |
           set -euo pipefail
