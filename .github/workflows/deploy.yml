@@ -11,7 +11,7 @@
 # Secret e variabili: tutti in QUESTA repo (.github) → Settings → Secrets / Variables
 #
 #   Secrets:
-#     DEPLOY_PAT                  PAT con contents:write su docker2azure4student
+#     INFRA_REPO_PAT                               PAT con contents:write su docker2azure4student
 #                                 e repo:write su .github, api, client
 #     CONTAINER_REGISTRY_PASSWORD Token/password per il container registry
 #
@@ -61,14 +61,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: git-locus/api
-          token: ${{ secrets.DEPLOY_PAT }}
+          token: ${{ secrets.INFRA_REPO_PAT }}
           path: api
 
       - name: Checkout client repo
         uses: actions/checkout@v4
         with:
           repository: git-locus/client
-          token: ${{ secrets.DEPLOY_PAT }}
+          token: ${{ secrets.INFRA_REPO_PAT }}
           path: client
 
       # ------------------------------------------------------------------
@@ -149,7 +149,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: Push sync bundle to infra repo
         env:
-          GH_TOKEN: ${{ secrets.DEPLOY_PAT }}
+          GH_TOKEN: ${{ secrets.INFRA_REPO_PAT }}
           IMAGE_TAG: ${{ steps.manifest.outputs.image_tag }}
         run: |
           set -euo pipefail
