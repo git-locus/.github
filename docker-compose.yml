@@ -10,25 +10,12 @@
 # Variabili d'ambiente:
 #   Crea un file .env a partire da .env.example prima di avviare.
 
-services:
+# Project name esplicito: senza questo i container prenderebbero il nome
+# della cartella (".github" → "github_*"), invisibili come "locus" in
+# Podman Desktop / Docker Desktop.
+name: locus
 
-  # ---------------------------------------------------------------------------
-  # Database PostgreSQL
-  # ---------------------------------------------------------------------------
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-locus}
-      POSTGRES_USER: ${POSTGRES_USER:-locus}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-locus}
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-locus}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+services:
 
   # ---------------------------------------------------------------------------
   # Azurite – emulatore Azure Blob Storage in locale
@@ -36,7 +23,13 @@ services:
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
     restart: unless-stopped
-    command: azurite-blob --blobHost 0.0.0.0
+    # --skipApiVersionCheck: l'SDK azure-storage-blob più recente usa una API
+    # version che Azurite stable non riconosce. Azurite la gestisce comunque.
+    command: azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck
+    ports:
+      # Esposto sull'host così il browser può scaricare i blob (thumbnails,
+      # immagini dei post, ecc) usando AZURITE_PUBLIC_HOST=localhost:10000.
+      - "10000:10000"
     volumes:
       - azurite_data:/data
     healthcheck:
@@ -46,7 +39,7 @@ services:
       retries: 10
 
   # ---------------------------------------------------------------------------
-  # API Django – nessuna build, sorgente montato, runserver con hot-reload
+  # API Django – settings_dev (SQLite, DEBUG=True), sorgente montato, hot-reload
   # ---------------------------------------------------------------------------
   api:
     image: python:3.12-alpine
@@ -61,41 +54,41 @@ services:
       # File statici condivisi con nginx
       - static_files:/static
     environment:
-      DJANGO_SETTINGS_MODULE: api.settings_prod
-      SECRET_KEY: ${SECRET_KEY:-changeme_in_dev}
-      SERVER_HOST: localhost
-      SERVER_URL: http://localhost:8080
-      JWT_SECRET: ${JWT_SECRET:-changeme_in_dev}
-      DATABASE_ENGINE: django.db.backends.postgresql
-      POSTGRES_NAME: ${POSTGRES_DB:-locus}
-      POSTGRES_USER: ${POSTGRES_USER:-locus}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-locus}
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      AZURE_ACCOUNT_NAME: devstoreaccount1
-      AZURE_ACCOUNT_KEY: "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+      DJANGO_SETTINGS_MODULE: api.settings_dev
+      # Azurite: hostname interno per le upload, hostname host-side per le URL
+      # browser-facing (vedi apps/media/storages.AzuriteStorage).
+      AZURITE_HOST: "azurite:10000"
+      AZURITE_PUBLIC_HOST: "localhost:10000"
+      # ACS (email) non è usato in dev locale; placeholder per import.
+      ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING:-endpoint=https://fake.communication.azure.com/;accesskey=fake}
       PATH: /app/.venv/bin:/uv_bin:/usr/local/bin:/usr/bin:/bin
       VIRTUAL_ENV: /app/.venv
-    # Copia uv nell'apposito volume (solo se non già presente), poi sync e runserver
+    # Bootstrap: install uv (cached), sync deps, create blob containers, migrate, run.
     command: >
       sh -c "
         [ -f /uv_bin/uv ] || (wget -qO- https://astral.sh/uv/install.sh | UV_INSTALL_DIR=/uv_bin sh) &&
         uv sync --frozen &&
-        python manage.py migrate --no-input &&
-        python manage.py collectstatic --no-input &&
-        python manage.py runserver 0.0.0.0:8000
+        uv run python scripts/init_blob_containers.py &&
+        uv run python manage.py makemigrations account category chat notification post &&
+        uv run python manage.py migrate --no-input &&
+        uv run python manage.py collectstatic --no-input &&
+        uv run python manage.py runserver 0.0.0.0:8000
       "
     depends_on:
-      db:
-        condition: service_healthy
       azurite:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/api/categories/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
 
   # ---------------------------------------------------------------------------
   # Client Next.js – nessuna build, sorgente montato, npm run dev con hot-reload
   # ---------------------------------------------------------------------------
   client:
-    image: node:18-alpine
+    image: node:20-alpine
     working_dir: /app
     volumes:
       # Sorgente live
@@ -129,12 +122,11 @@ services:
       - static_files:/static:ro
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
       client:
         condition: service_healthy
 
 volumes:
-  db_data:
   azurite_data:
   static_files:
   api_venv:
