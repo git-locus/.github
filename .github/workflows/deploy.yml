@@ -101,12 +101,17 @@ jobs:
       # ------------------------------------------------------------------
       # 3. Build e push dell'immagine fullstack
       # ------------------------------------------------------------------
+      # I secret sono passati come env var (non interpolati inline) per
+      # evitare leak in caso di tracing/`set -x`. GitHub maschera comunque
+      # i valori, ma il pattern `env:` è la prassi raccomandata.
       - name: Docker login
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
+          REGISTRY_USERNAME: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
+          REGISTRY_SERVER: ${{ secrets.REGISTRY_LOGIN_SERVER }}
         run: |
-          echo "${{ secrets.CONTAINER_REGISTRY_PASSWORD }}" | \
-            docker login "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-              -u "${{ secrets.CONTAINER_REGISTRY_USERNAME }}" \
-              --password-stdin
+          echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_SERVER" \
+            -u "$REGISTRY_USERNAME" --password-stdin
 
       - name: Build and push image
         id: build
