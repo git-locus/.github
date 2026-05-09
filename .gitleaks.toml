@@ -3,16 +3,63 @@
 [extend]
 useDefault = true
 
-[allowlist]
-description = "Allowlist for well-known development placeholders"
-# Microsoft Azurite well-known development storage account key
+# ----------------------------------------------------------------------
+# Allowlist — REAL secrets must NEVER be added here.
+# ----------------------------------------------------------------------
+# Use [[allowlists]] (plural / array form). The legacy single
+# [allowlist] table cannot coexist with [[allowlists]] in newer
+# gitleaks versions, so we use only the array form.
+# ----------------------------------------------------------------------
+
+# Microsoft Azurite well-known development storage account key.
+# Published by Microsoft in the official Azurite documentation:
 # https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite
+[[allowlists]]
+description = "Microsoft Azurite well-known development account key"
 regexes = [
   # Match the well-known Azurite key (and its line-split variants in source files)
   '''Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq''',
 ]
+
+# Build artefacts and caches that may legitimately contain
+# high-entropy strings (e.g. Next.js prerender keys).
+[[allowlists]]
+description = "Build artefacts / caches"
 paths = [
   '''(.*/)?\.next/.*''',
   '''(.*/)?__pycache__/.*''',
   '''(.*/)?node_modules/.*''',
+]
+
+# ----------------------------------------------------------------------
+# Historical leak fingerprints (api repo only, kept in all repos for
+# parity so the same config can be copied between them).
+#
+# These credentials were committed to the api repository in 2023-2024
+# (the AWS / EC2 / self-managed Postgres era of the project). They
+# were REMOVED from the working tree in commit `393e266` (2023-12-17)
+# but remain in the git history.
+#
+# All of these credentials have been INVALIDATED by the Azure
+# migration of 2026-03-15 (commit `60c8139`):
+#   - The EC2 host (idealocus.xyz, 13.48.181.4) was decommissioned
+#   - The Postgres database is now Azure Database for PostgreSQL with
+#     a new password
+#   - SECRET_KEY and JWT_SECRET were re-rolled for the Azure deployment
+#     and are injected via App Service environment variables
+#
+# They are kept in the allowlist so gitleaks `--git` runs (pre-commit
+# hooks or manual audits) do not block on already-rotated credentials.
+# CI runs use `--no-git` and never reach the history.
+#
+# DO NOT add new fingerprints here without documenting WHY the secret
+# is no longer valid and WHEN it was rotated.
+# ----------------------------------------------------------------------
+[[allowlists]]
+description = "AWS/EC2 era credentials (rotated 2026-03-15 with Azure migration)"
+commits = [
+  "665df208ea98bcea4a73c635fffb48318508a620",  # 2023-11-30 Server IP to env file
+  "904193df80b6cc4f3f1104dd592232bc9534e1c5",  # 2023-09-04 Updated gitignore
+  "a33240a0421fe2fe03b40f934742b60d74df27d4",  # 2024-01-14 Revert merge
+  "f03f34accda644d3c078b40e4791f6cec0f3b359",  # 2023-09-05 Implemented authentication app
 ]
