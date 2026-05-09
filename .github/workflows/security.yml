@@ -35,7 +35,7 @@ jobs:
           format: sarif
           output-file: hadolint.sarif
           no-fail: true
-      - uses: github/codeql-action/upload-sarif@9e8d0789d4a0fa9ceb6b1738f7e269594bdd67f0  # v3.28.9
+      - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
         if: always()
         with:
           sarif_file: hadolint.sarif
@@ -56,7 +56,7 @@ jobs:
           format: sarif
           output: trivy.sarif
           severity: CRITICAL,HIGH,MEDIUM
-      - uses: github/codeql-action/upload-sarif@9e8d0789d4a0fa9ceb6b1738f7e269594bdd67f0  # v3.28.9
+      - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
         if: always()
         with:
           sarif_file: trivy.sarif
@@ -100,7 +100,7 @@ jobs:
           if [ ! -s zizmor.sarif ]; then
             echo '{"version":"2.1.0","$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"zizmor"}},"results":[]}]}' > zizmor.sarif
           fi
-      - uses: github/codeql-action/upload-sarif@9e8d0789d4a0fa9ceb6b1738f7e269594bdd67f0  # v3.28.9
+      - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
         if: always()
         with:
           sarif_file: zizmor.sarif
