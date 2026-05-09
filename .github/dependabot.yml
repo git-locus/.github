@@ -7,6 +7,13 @@ updates:
       day: "monday"
     open-pull-requests-limit: 5
     labels: ["dependencies", "github-actions"]
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      actions-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -15,3 +22,10 @@ updates:
       day: "monday"
     open-pull-requests-limit: 3
     labels: ["dependencies", "docker"]
+    groups:
+      docker-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      docker-major:
+        patterns: ["*"]
+        update-types: ["major"]

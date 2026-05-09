@@ -1,0 +1,18 @@
+# Gitleaks config — extends default rules
+# https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for well-known development placeholders"
+# Microsoft Azurite well-known development storage account key
+# https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite
+regexes = [
+  # Match the well-known Azurite key (and its line-split variants in source files)
+  '''Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq''',
+]
+paths = [
+  '''(.*/)?\.next/.*''',
+  '''(.*/)?__pycache__/.*''',
+  '''(.*/)?node_modules/.*''',
+]
