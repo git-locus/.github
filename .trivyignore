@@ -1,0 +1,5 @@
+# DS002 – "Image user should not be 'root'"
+# Il CMD finale (init-https.sh → supervisord) gira come root perché
+# nginx e certbot lo richiedono. I processi applicativi (gunicorn, node)
+# droppano privilegi internamente via supervisord user= directives.
+DS002
