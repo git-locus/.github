@@ -36,7 +36,7 @@ jobs:
           output-file: hadolint.sarif
           failure-threshold: warning
       - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
-        if: always()
+        if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: hadolint.sarif
           category: hadolint
@@ -58,7 +58,7 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
           exit-code: '1'
       - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
-        if: always()
+        if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: trivy.sarif
           category: trivy-config
@@ -112,7 +112,7 @@ jobs:
           fi
           exit 0
       - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
-        if: always()
+        if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: zizmor.sarif
           category: zizmor

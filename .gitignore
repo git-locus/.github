@@ -12,6 +12,10 @@
 .DS_Store
 Thumbs.db
 
+# Cache locali (uv, ecc.) generate dai test container
+.cache/
+.local/
+
 # Bozze locali di issue / note temporanee — non vanno committate.
 # Usa il file solo come scratchpad e poi pubblicalo come issue su GitHub.
 issues/
