@@ -68,20 +68,20 @@ jobs:
       # 1. Checkout dell'intera repo .github con tutte le sotto-repo
       # ------------------------------------------------------------------
       - name: Checkout .github repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: dot-github
 
       # Checkout separato di api e client (sono repo indipendenti)
       - name: Checkout api repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: git-locus/api
           token: ${{ secrets.INFRA_REPO_PAT }}
           path: api
 
       - name: Checkout client repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: git-locus/client
           token: ${{ secrets.INFRA_REPO_PAT }}
