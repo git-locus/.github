@@ -37,19 +37,19 @@ jobs:
       issues: write   # ZAP action può aprire issue di tracking (opzionale)
     steps:
       - name: Checkout deploy bundle
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
 
       # docker-compose si aspetta `../api` e `../client`, quindi cloniamoli
       # in una struttura compatibile.
       - name: Checkout api
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           repository: git-locus/api
           ref: dev
           path: workspace/api
 
       - name: Checkout client
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           repository: git-locus/client
           ref: dev
