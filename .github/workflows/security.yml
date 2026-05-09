@@ -37,7 +37,6 @@ jobs:
           failure-threshold: warning
       - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
         if: always()
-        continue-on-error: true
         with:
           sarif_file: hadolint.sarif
           category: hadolint
@@ -60,7 +59,6 @@ jobs:
           exit-code: '1'
       - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
         if: always()
-        continue-on-error: true
         with:
           sarif_file: trivy.sarif
           category: trivy-config
@@ -95,7 +93,6 @@ jobs:
       - name: Run actionlint
         # continue-on-error: actionlint può segnalare shellcheck warnings
         # ma non deve bloccare zizmor / upload-sarif nello stesso job.
-        continue-on-error: true
         run: ./actionlint -color
       - uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b  # v6.6.0
       - name: zizmor
@@ -116,7 +113,6 @@ jobs:
           exit 0
       - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
         if: always()
-        continue-on-error: true
         with:
           sarif_file: zizmor.sarif
           category: zizmor
