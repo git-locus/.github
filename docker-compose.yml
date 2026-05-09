@@ -39,7 +39,9 @@ services:
       retries: 10
 
   # ---------------------------------------------------------------------------
-  # API Django – settings_dev (SQLite, DEBUG=True), sorgente montato, hot-reload
+  # API Django – settings_dev (SQLite, DEBUG=True), sorgente montato.
+  # --noreload evita che Django 5.2 scansioni la venv montata e incontri
+  # permessi volume non leggibili in Podman rootless.
   # ---------------------------------------------------------------------------
   api:
     # Immagine ufficiale uv+python: niente curl|sh da internet, build deterministica.
@@ -76,7 +78,7 @@ services:
         uv run python manage.py makemigrations account category chat notification post &&
         uv run python manage.py migrate --no-input &&
         uv run python manage.py collectstatic --no-input &&
-        uv run python manage.py runserver 0.0.0.0:8000
+        uv run python manage.py runserver 0.0.0.0:8000 --noreload
       "
     depends_on:
       azurite:
