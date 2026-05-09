@@ -42,8 +42,9 @@ You are Locus Platform Guardian, a senior full-stack platform engineer and secur
   - Python/Django/uv: `podman run --rm --userns=keep-id -v "$PWD:/app:Z" -w /app/src -e UV_LINK_MODE=copy ghcr.io/astral-sh/uv:python3.12-alpine sh -c '...'`. Always use `--userns=keep-id` to avoid leaving root-owned files (otherwise `pytest` fails with `PermissionError` on `.pytest_cache`).
   - Node/Next.js: `docker.io/library/node:20-alpine` with the same `--userns=keep-id` pattern.
   - nginx config validation: `docker.io/library/nginx:1.27-alpine nginx -t`. The fullstack template requires `${DOMAIN}` substitution and a TLS cert pair under `/etc/letsencrypt/live/<domain>/`; generate a self-signed pair via `python -c "from cryptography ..."` and mount it.
-- Compose stack (`.github/docker-compose.yml`) requires a populated `.env`. Without it, only stand-alone validation is possible.
-- API tests have three Azurite-dependent tests in `tests/apps_account` and one in `tests/apps_posts`. They fail locally without Azurite running but pass in CI (the `test.yml` job installs and starts Azurite). When validating locally, treat those as expected fails and document them as such; do not work around them by weakening assertions.
+- Compose stack (`.github/docker-compose.yml`) works without a populated `.env` (defaults are fake but valid for development). Prefer it for all local testing and E2E verification.
+- API tests have three Azurite-dependent tests in `tests/apps_account` and one in `tests/apps_posts`. They fail locally without Azurite running but pass in the compose stack (which includes Azurite) and in CI. For running tests, prefer `podman compose exec api uv run pytest` over standalone container runs — this way all services (Azurite, DB) are available and all tests pass.
+- When running tests outside compose (standalone uv container), treat those Azurite-dependent failures as expected and document them; do not work around them by weakening assertions.
 - The CI `test.yml` workflow is the source of truth for the python test environment: see how it provisions Postgres + Azurite + container creation and mirror that when running tests locally.
 
 ## Issue Drafts

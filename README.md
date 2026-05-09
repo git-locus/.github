@@ -105,6 +105,30 @@ Il compose avvia 5 servizi:
 
 Il sorgente di `api/` e `client/` è montato come volume: le modifiche al codice sono subito visibili senza rebuild.
 
+### Verifica locale con compose
+
+Il compose stack è il modo raccomandato per la verifica locale E2E. Non serve un `.env` popolato: i default fake sono sufficienti per lo sviluppo.
+
+```bash
+cd .github
+podman compose up --build -d      # oppure docker compose
+podman compose logs -f             # seguire i log
+curl -i http://localhost:8080/api/categories/   # verifica
+
+# test dell'api con Azurite (tutti passano nel compose)
+podman compose exec api uv run pytest
+
+podman compose down -v             # cleanup
+```
+
+Per verificare le modifiche all'immagine di produzione (Dockerfile,
+supervisord, nginx.fullstack.conf, init-https.sh) usare il build diretto:
+
+```bash
+podman build -t locus-fullstack .github
+podman run --rm -p 8080:8080 -p 8081:8081 --env-file .github/.env locus-fullstack
+```
+
 ---
 
 ## Deploy su Azure
@@ -201,7 +225,7 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
 
 | Workflow | Trigger | Cosa fa |
 |---|---|---|
-| `security.yml` | push/PR su `dev`/`main`, weekly cron | hadolint, trivy-config (CRITICAL/HIGH/MEDIUM), shellcheck, actionlint, zizmor, gitleaks |
+| `security.yml` | push/PR su `dev`/`main`, weekly cron | hadolint, trivy-config (CRITICAL/HIGH/MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history con allowlist) |
 | `dast-zap.yml` | nightly + on-PR | Avvia lo stack docker compose effimero ed esegue ZAP baseline contro `http://localhost:8080` |
 
 Le repo `api` e `client` hanno workflow `security.yml` analoghi (bandit, semgrep,

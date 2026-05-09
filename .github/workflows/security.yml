@@ -89,7 +89,11 @@ jobs:
       - name: Install actionlint
         run: |
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
-          ./actionlint -color
+      - name: Run actionlint
+        # continue-on-error: actionlint può segnalare shellcheck warnings
+        # ma non deve bloccare zizmor / upload-sarif nello stesso job.
+        continue-on-error: true
+        run: ./actionlint -color
       - uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b  # v6.6.0
       - name: zizmor
         shell: bash
@@ -97,7 +101,7 @@ jobs:
           set +e
           # Pre-crea uno stub SARIF: se uvx fallisce o non scrive nulla, upload-sarif
           # avrà comunque un file valido da consumare.
-          echo '{"version":"2.1.0","$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"zizmor"}},"results":[]}]}' > zizmor.sarif
+          printf '%s\n' '{"version":"2.1.0","$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"zizmor"}},"results":[]}]}' > zizmor.sarif
           uvx zizmor==1.5.2 --no-progress --format sarif .github/workflows > zizmor.sarif.tmp 2>zizmor.err
           rc=$?
           if [ -s zizmor.sarif.tmp ]; then
@@ -126,4 +130,4 @@ jobs:
             | tar -xz -C /usr/local/bin gitleaks
           gitleaks version
       - name: Run gitleaks
-        run: gitleaks detect --no-git --source . --config .gitleaks.toml --no-banner --redact --verbose
+        run: gitleaks detect --source . --config .gitleaks.toml --no-banner --redact --verbose

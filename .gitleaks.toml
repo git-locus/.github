@@ -49,8 +49,8 @@ paths = [
 #     and are injected via App Service environment variables
 #
 # They are kept in the allowlist so gitleaks `--git` runs (pre-commit
-# hooks or manual audits) do not block on already-rotated credentials.
-# CI runs use `--no-git` and never reach the history.
+# are required to prevent the workflow from failing on rotated secrets.
+# CI runs scan the full history (`fetch-depth: 0`) so these allowlists
 #
 # DO NOT add new fingerprints here without documenting WHY the secret
 # is no longer valid and WHEN it was rotated.
