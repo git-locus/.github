@@ -109,6 +109,12 @@ Il sorgente di `api/` e `client/` è montato come volume: le modifiche al codice
 
 ## Deploy su Azure
 
+### Branch, pull request e documentazione
+
+La convenzione branch ad-hoc → pull request → `dev` vale per i repository applicativi `api` e `client`. Quando il lavoro è completo e verificato, apri una pull request verso `dev` e considera i controlli GitHub Actions della PR parte della definizione di pronto.
+
+Per questa repo di orchestrazione è accettabile committare e pushare direttamente su `main` quando la modifica è circoscritta e verificata. Prima del merge in `dev` di `api` o `client`, e sempre prima di modifiche architetturali o operative importanti, aggiorna i README e gli altri file `.md` coinvolti: non solo il README principale, ma ogni documento Markdown pertinente nei repository interessati.
+
 ### Panoramica del flusso
 
 ```
