@@ -11,3 +11,8 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Bozze locali di issue / note temporanee — non vanno committate.
+# Usa il file solo come scratchpad e poi pubblicalo come issue su GitHub.
+issues/
+

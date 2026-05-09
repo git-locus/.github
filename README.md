@@ -173,3 +173,43 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
 | `git-locus/.github` (questa) | Orchestrazione build e deploy |
 | `git-locus/docker2azure4student` | Infra Azure — riceve il sync bundle e fa il deploy |
 | `git-locus/knowledge` | Documentazione e guide operative |
+
+---
+
+## Sicurezza
+
+### Hardening attivo
+
+- **Container non-root**: nginx, gunicorn e Next.js girano come utente non
+  privilegiato `django` (vedi `Dockerfile` + `supervisord.conf`).
+- **TLS**: solo TLSv1.2/1.3, cipher Mozilla Intermediate, OCSP stapling,
+  `ssl_session_tickets off`.
+- **Headers**: HSTS 1y preload, CSP restrittiva, `X-Frame-Options DENY`,
+  `Referrer-Policy strict-origin-when-cross-origin`, `Permissions-Policy`
+  che blocca camera/mic/geolocation/payment/USB, COOP/CORP.
+- **Rate limit nginx** per zone: `auth_zone` 5r/m sugli endpoint di
+  login/signup/password-reset, `upload_zone` 2r/s sugli upload, `api_zone`
+  20r/s generico.
+- **Trigger di deploy filtrato**: il workflow `deploy.yml` parte su `push`
+  solo se cambiano file rilevanti (`Dockerfile`, `nginx/**`, `supervisord.conf`,
+  `scripts/**`, `app.env.example`, `docker-compose.yml`, `deploy.yml`).
+  Modifiche a README, agenti, instructions, knowledge non triggerano deploy.
+  Le altre repo (`api`, `client`) usano `paths-ignore` analogo nel
+  workflow `notify-deploy.yml`.
+
+### Workflow CI di sicurezza
+
+| Workflow | Trigger | Cosa fa |
+|---|---|---|
+| `security.yml` | push/PR su `dev`/`main`, weekly cron | hadolint, trivy-config (CRITICAL/HIGH/MEDIUM), shellcheck, actionlint, zizmor, gitleaks |
+| `dast-zap.yml` | nightly + on-PR | Avvia lo stack docker compose effimero ed esegue ZAP baseline contro `http://localhost:8080` |
+
+Le repo `api` e `client` hanno workflow `security.yml` analoghi (bandit, semgrep,
+pip-audit / npm-audit, codeql, trivy-fs, gitleaks). Tutte le action usate sono
+pinnate per SHA40.
+
+### Issue aperte
+
+- [`issues/2026-05-09-oidc-github-app-deploy.md`](issues/2026-05-09-oidc-github-app-deploy.md):
+  sostituire il PAT di deploy con GitHub App + OIDC verso Azure (alta priorità).
+

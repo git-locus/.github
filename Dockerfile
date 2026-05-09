@@ -73,8 +73,12 @@ RUN apk add --no-cache \
     && pip install --no-cache-dir certbot \
     && rm -rf /var/cache/apk/*
 
-# --- Utente non-root per Next.js ---
-RUN addgroup -S nodejs && adduser -S -G nodejs nextjs
+# --- Utenti non-root per Next.js e Django ---
+# nginx, supervisord e certbot continuano a girare come root (richiesto per
+# legare porte privilegiate, scrivere /etc/letsencrypt, ecc.). Solo i
+# processi applicativi droppano privilegi.
+RUN addgroup -S nodejs && adduser -S -G nodejs nextjs \
+    && addgroup -S django && adduser -S -G django django
 
 # ---- API (Django + gunicorn) ----
 WORKDIR /api
@@ -82,11 +86,12 @@ ENV VIRTUAL_ENV=/api/.venv \
     PATH="/api/.venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
-COPY --from=api-builder /api/.venv /api/.venv
-COPY api/src/manage.py ./
-COPY api/src/apps ./apps
-COPY api/src/api ./api
-COPY api/entrypoint.sh api/setup.sh ./
+COPY --from=api-builder --chown=django:django /api/.venv /api/.venv
+COPY --chown=django:django api/src/manage.py ./
+COPY --chown=django:django api/src/apps ./apps
+COPY --chown=django:django api/src/api ./api
+COPY --chown=django:django api/src/scripts ./scripts
+COPY --chown=django:django api/entrypoint.sh api/setup.sh ./
 RUN chmod +x ./entrypoint.sh ./setup.sh
 
 # ---- Client (Next.js standalone) ----
@@ -108,7 +113,9 @@ COPY .github/scripts/init-https.sh /usr/local/bin/init-https.sh
 RUN chmod +x /usr/local/bin/init-https.sh
 
 # ---- Static files (condivisi tra Django e nginx) ----
-RUN mkdir -p /static && chown nobody:nobody /static
+# Owned dall'utente django: collectstatic gira come django e deve scrivere qui.
+# nginx legge come root (drop privileges interno via worker_processes).
+RUN mkdir -p /static && chown -R django:django /static
 
 EXPOSE 8080 8081
 

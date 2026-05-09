@@ -42,15 +42,19 @@ services:
   # API Django – settings_dev (SQLite, DEBUG=True), sorgente montato, hot-reload
   # ---------------------------------------------------------------------------
   api:
-    image: python:3.12-alpine
+    # Immagine ufficiale uv+python: niente curl|sh da internet, build deterministica.
+    image: ghcr.io/astral-sh/uv:python3.12-alpine
     working_dir: /app
+    # DNS espliciti: i container rootless di Podman a volte non ereditano i
+    # resolver host (systemd-resolved). Senza questi `uv sync` fallisce su pypi.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       # Sorgente live: ogni modifica al codice è subito visibile
       - ../api/src:/app:z
       # Cache del virtualenv: uv sync è istantaneo dopo la prima volta
       - api_venv:/app/.venv
-      # uv binary copiato dall'immagine ufficiale (montato in sola lettura)
-      - api_uv_bin:/uv_bin
       # File statici condivisi con nginx
       - static_files:/static
     environment:
@@ -61,12 +65,12 @@ services:
       AZURITE_PUBLIC_HOST: "localhost:10000"
       # ACS (email) non è usato in dev locale; placeholder per import.
       ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING:-endpoint=https://fake.communication.azure.com/;accesskey=fake}
-      PATH: /app/.venv/bin:/uv_bin:/usr/local/bin:/usr/bin:/bin
+      PATH: /app/.venv/bin:/usr/local/bin:/usr/bin:/bin
       VIRTUAL_ENV: /app/.venv
-    # Bootstrap: install uv (cached), sync deps, create blob containers, migrate, run.
+      UV_LINK_MODE: copy
+    # Bootstrap: sync deps (uv già nell'immagine), init blob, migrate, runserver.
     command: >
       sh -c "
-        [ -f /uv_bin/uv ] || (wget -qO- https://astral.sh/uv/install.sh | UV_INSTALL_DIR=/uv_bin sh) &&
         uv sync --frozen &&
         uv run python scripts/init_blob_containers.py &&
         uv run python manage.py makemigrations account category chat notification post &&
@@ -90,6 +94,9 @@ services:
   client:
     image: node:20-alpine
     working_dir: /app
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       # Sorgente live
       - ../client:/app:z
@@ -130,5 +137,4 @@ volumes:
   azurite_data:
   static_files:
   api_venv:
-  api_uv_bin:
   client_node_modules:

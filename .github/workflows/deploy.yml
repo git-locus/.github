@@ -33,9 +33,21 @@ on:
         type: string
         required: false
         default: 'manual'
+  # Push su main della repo .github: il workflow parte SOLO se vengono toccati
+  # file che impattano l'immagine fullstack o il workflow stesso. Modifiche a
+  # README, knowledge, agents, instructions, ecc. NON triggerano deploy.
+  # paths: si applica solo al trigger push, non a repository_dispatch.
   push:
     branches:
       - main
+    paths:
+      - '.github/workflows/deploy.yml'
+      - 'Dockerfile'
+      - 'nginx/**'
+      - 'supervisord.conf'
+      - 'scripts/**'
+      - 'app.env.example'
+      - 'docker-compose.yml'
 
 permissions:
   contents: read

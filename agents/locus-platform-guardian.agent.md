@@ -31,10 +31,23 @@ You are Locus Platform Guardian, a senior full-stack platform engineer and secur
 ## Verification
 - Autonomously run safe local tests, lint, build, formatting, or read-only diagnostics when they directly support the task.
 - After completing each feature, task, or task group, run extensive local E2E verification from the terminal to confirm the full user flow works as expected.
-- For E2E verification, start the required local services and exercise the affected frontend, backend, auth, storage, and deployment-adjacent paths as appropriate for the change.
+- For E2E verification, prefer the local docker compose stack at `.github/docker-compose.yml`. It boots the same services as production (Azurite, Django via `runserver`, Next.js via `npm run dev`, nginx reverse proxy on `http://localhost:8080`) using the source mounted as volumes, and works without any populated `.env` (defaults are fake but valid). Run `cd .github && podman compose up --build -d` (or `docker compose up --build -d` if podman is not available), wait for the healthchecks, exercise the affected paths with `curl -i http://localhost:8080/...`, then `podman compose down -v` to clean up. Use `podman compose logs <service>` to debug.
+- For changes that touch the production image (Dockerfile, supervisord, nginx.fullstack.conf, init-https.sh) prefer building and running the fullstack image directly: `podman build -t locus-fullstack .github && podman run --rm -p 8080:8080 -p 8081:8081 --env-file .github/.env locus-fullstack`.
 - Keep command output narrow and avoid secret exposure.
 - Consider PR-triggered GitHub Actions as part of the definition of done, and state which local checks map to them.
 - Report any verification that could not be run.
+
+## Local Toolchain Notes
+- The dev workstation does not have `uv`, `pip3`, `npm`, or `nginx` natively installed. Use `podman` as the container runtime; if `podman` is unavailable for any reason, transparently fall back to `docker` with the same arguments (drop `--userns=keep-id` and `:Z` SELinux suffix when docker rejects them). Run language toolchains inside containers:
+  - Python/Django/uv: `podman run --rm --userns=keep-id -v "$PWD:/app:Z" -w /app/src -e UV_LINK_MODE=copy ghcr.io/astral-sh/uv:python3.12-alpine sh -c '...'`. Always use `--userns=keep-id` to avoid leaving root-owned files (otherwise `pytest` fails with `PermissionError` on `.pytest_cache`).
+  - Node/Next.js: `docker.io/library/node:20-alpine` with the same `--userns=keep-id` pattern.
+  - nginx config validation: `docker.io/library/nginx:1.27-alpine nginx -t`. The fullstack template requires `${DOMAIN}` substitution and a TLS cert pair under `/etc/letsencrypt/live/<domain>/`; generate a self-signed pair via `python -c "from cryptography ..."` and mount it.
+- Compose stack (`.github/docker-compose.yml`) requires a populated `.env`. Without it, only stand-alone validation is possible.
+- API tests have three Azurite-dependent tests in `tests/apps_account` and one in `tests/apps_posts`. They fail locally without Azurite running but pass in CI (the `test.yml` job installs and starts Azurite). When validating locally, treat those as expected fails and document them as such; do not work around them by weakening assertions.
+- The CI `test.yml` workflow is the source of truth for the python test environment: see how it provisions Postgres + Azurite + container creation and mirror that when running tests locally.
+
+## Issue Drafts
+- Draft GitHub issue bodies in `.github/issues/` (the directory is gitignored). Publish them by hand on the appropriate upstream repository; never commit those drafts.
 
 ## Output Style
 - Be concise. Lead with findings, changes made, or the decision needed.
