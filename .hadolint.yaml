@@ -1,0 +1,12 @@
+# Hadolint configuration
+# https://github.com/hadolint/hadolint#configure
+ignored:
+  # DL3018 – "Pin versions in apk add"
+  # I pacchetti Alpine di sistema (nginx, nodejs, curl, ecc.) devono seguire
+  # l'immagine base; pinnare le versioni causa rotture ad ogni bump dell'immagine.
+  - DL3018
+
+  # DL3013 – "Pin versions in pip"
+  # certbot è l'unico pacchetto pip nel runtime stage; la versione è implicitamente
+  # pinnata dall'immagine base Python e la build è deterministica via lockfile.
+  - DL3013
