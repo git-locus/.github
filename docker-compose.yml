@@ -27,8 +27,9 @@ services:
     # version che Azurite stable non riconosce. Azurite la gestisce comunque.
     command: azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck
     ports:
-      # Esposto sull'host così il browser può scaricare i blob (thumbnails,
-      # immagini dei post, ecc) usando AZURITE_PUBLIC_HOST=localhost:10000.
+      # Esposto sull'host solo per debug (Storage Explorer / curl). Il
+      # browser non lo usa più: i media sono reverse-proxied dall'API
+      # via /api/media/*.
       - "10000:10000"
     volumes:
       - azurite_data:/data
@@ -61,10 +62,10 @@ services:
       - static_files:/static
     environment:
       DJANGO_SETTINGS_MODULE: api.settings_dev
-      # Azurite: hostname interno per le upload, hostname host-side per le URL
-      # browser-facing (vedi apps/media/storages.AzuriteStorage).
+      # Hostname interno per parlare con Azurite. Il browser non raggiunge
+      # mai Azurite direttamente: i media privati sono serviti via
+      # `apps.media.views` su /api/media/*.
       AZURITE_HOST: "azurite:10000"
-      AZURITE_PUBLIC_HOST: "localhost:10000"
       # ACS (email) non è usato in dev locale; placeholder per import.
       ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING:-endpoint=https://fake.communication.azure.com/;accesskey=fake}
       PATH: /app/.venv/bin:/usr/local/bin:/usr/bin:/bin
