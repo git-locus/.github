@@ -120,6 +120,6 @@ RUN mkdir -p /static && chown -R django:django /static
 EXPOSE 8080 8081
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD curl -fk https://localhost:8081/ || curl -f http://localhost:8080/ || exit 1
+    CMD curl -f http://127.0.0.1:8000/api/categories/ || exit 1
 
 CMD ["/usr/local/bin/init-https.sh"]
