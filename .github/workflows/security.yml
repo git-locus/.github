@@ -100,12 +100,11 @@ jobs:
         run: |
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
       - name: Run actionlint
-        # actionlint può segnalare shellcheck warnings; li mostriamo
-        # ma non deve bloccare zizmor / upload-sarif nello stesso job.
-        continue-on-error: true
         run: ./actionlint -color
       - uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b  # v6.6.0
+        if: always()  # gira anche se actionlint ha trovato issue
       - name: zizmor
+        if: always()  # gira anche se actionlint ha trovato issue
         shell: bash
         run: |
           set +e
@@ -120,7 +119,7 @@ jobs:
             echo "::warning::zizmor non ha prodotto SARIF (rc=$rc). Stderr:"
             cat zizmor.err || true
           fi
-          exit 0
+          exit $rc
       - uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e  # v4.35.4
         if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
