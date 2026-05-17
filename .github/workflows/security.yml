@@ -4,9 +4,9 @@ name: Security 🛡️
 # supervisord, scripts, workflow di deploy). Focus: container, IaC, workflow.
 
 on:
+  # Solo pull_request per evitare duplicazione con il run di push.
+  # Schedule weekly + workflow_dispatch garantiscono coverage post-merge.
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
   schedule:
     - cron: "0 3 * * 1"
