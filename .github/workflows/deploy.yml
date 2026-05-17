@@ -70,12 +70,14 @@ jobs:
       - name: Checkout .github repo
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           path: dot-github
 
       # Checkout separato di api e client (sono repo indipendenti)
       - name: Checkout api repo
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           repository: git-locus/api
           token: ${{ secrets.INFRA_REPO_PAT }}
           path: api
@@ -83,6 +85,7 @@ jobs:
       - name: Checkout client repo
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           repository: git-locus/client
           token: ${{ secrets.INFRA_REPO_PAT }}
           path: client
@@ -135,9 +138,9 @@ jobs:
         id: manifest
         env:
           IMAGE_TAG: ${{ steps.build.outputs.image_tag }}
+          SOURCE_REPO: ${{ github.event.client_payload.source_repo || inputs.source_repo || 'manual' }}
+          SOURCE_SHA: ${{ github.event.client_payload.source_sha || github.sha }}
         run: |
-          SOURCE_REPO="${{ github.event.client_payload.source_repo || inputs.source_repo || 'manual' }}"
-          SOURCE_SHA="${{ github.event.client_payload.source_sha || github.sha }}"
           cat > manifest.json <<EOF
           {
             "sourceRepo": "${SOURCE_REPO}",
