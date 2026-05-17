@@ -1,15 +1,15 @@
 name: DAST – ZAP Baseline 🌐
 
-# Dynamic scan: avvia lo stack locale (docker-compose) ed esegue OWASP ZAP
-# baseline scan contro l'istanza dev. È un baseline scan: passivo, non manda
-# payload distruttivi. Adatto a girare in CI/notturno.
+# Passive baseline scan con OWASP ZAP.
 #
-# IMPORTANTE: testa lo stack in modalità dev (settings_dev, DEBUG=True). I
-# finding correlati a configurazione dev (es. HSTS assente, server header
-# verbose) saranno legittimi in produzione e vanno gestiti via .zap/rules.tsv.
+# Strategia:
+#   1. Prova a scansionare il sito di produzione (https://$DOMAIN).
+#   2. Se la produzione non è raggiungibile, fa fallback sullo stack
+#      Docker Compose locale (dev) — ma il job emette un errore
+#      per segnalare che la scansione non ha coperto la configurazione reale.
 #
-# Per testare la produzione vera serve un'istanza staging con immagine prod;
-# in tal caso aggiungere un job DAST separato che punti al dominio staging.
+# La variabile DOMAIN deve essere configurata in:
+#   Repository → Settings → Variables → Actions  (es. "locus.now")
 
 on:
   schedule:
@@ -34,14 +34,41 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-      issues: write   # ZAP action può aprire issue di tracking (opzionale)
+      issues: write
+
     steps:
       - name: Checkout deploy bundle
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
 
-      # docker-compose si aspetta `../api` e `../client`, quindi cloniamoli
-      # in una struttura compatibile.
+      # ----------------------------------------------------------------
+      # Decide target: prod o fallback locale
+      # ----------------------------------------------------------------
+      - name: Probe production
+        id: probe
+        env:
+          DOMAIN: ${{ vars.DOMAIN }}
+        run: |
+          if [ -z "$DOMAIN" ]; then
+            echo "::warning::vars.DOMAIN non configurata – fallback a stack locale"
+            echo "target=local" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          PROD_URL="https://${DOMAIN}"
+          if curl -fsSk --connect-timeout 10 --max-time 20 "${PROD_URL}/landing" >/dev/null 2>&1; then
+            echo "Production reachable at ${PROD_URL}"
+            echo "target=prod" >> "$GITHUB_OUTPUT"
+            echo "url=${PROD_URL}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Produzione ${PROD_URL} non raggiungibile – fallback a stack locale"
+            echo "target=local" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ----------------------------------------------------------------
+      # Fallback: checkout repos + compose stack (solo se serve)
+      # ----------------------------------------------------------------
       - name: Checkout api
+        if: steps.probe.outputs.target == 'local'
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           repository: git-locus/api
@@ -50,6 +77,7 @@ jobs:
           path: workspace/api
 
       - name: Checkout client
+        if: steps.probe.outputs.target == 'local'
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           repository: git-locus/client
@@ -57,22 +85,24 @@ jobs:
           ref: dev
           path: workspace/client
 
-      - name: Move .github bundle in workspace
+      - name: Prepare workspace
+        if: steps.probe.outputs.target == 'local'
         run: |
           mkdir -p workspace/.github
           rsync -a --exclude='workspace' ./ workspace/.github/
 
       - name: Bring up stack
+        if: steps.probe.outputs.target == 'local'
         working-directory: workspace/.github
         run: |
-          # Nginx in compose ascolta su 8080 (vedi nginx/nginx.dev.conf).
           docker compose up -d --wait --wait-timeout 240 azurite api client nginx || \
             (docker compose logs --tail=200; exit 1)
 
-      - name: Wait for nginx ready
+      - name: Wait for stack ready
+        if: steps.probe.outputs.target == 'local'
         run: |
           for _i in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/api/categories/ >/dev/null; then
+            if curl -fsS http://localhost:8080/api/categories/ >/dev/null 2>&1; then
               echo "stack ready"; exit 0
             fi
             sleep 2
@@ -81,29 +111,48 @@ jobs:
           docker compose -f workspace/.github/docker-compose.yml logs --tail=200
           exit 1
 
-      - name: Prepare ZAP rules dir
+      # ----------------------------------------------------------------
+      # Imposta l'URL di scansione definitivo
+      # ----------------------------------------------------------------
+      - name: Set scan target
+        id: target
+        env:
+          PROBE_TARGET: ${{ steps.probe.outputs.target }}
+          PROBE_URL: ${{ steps.probe.outputs.url }}
+        run: |
+          if [ "$PROBE_TARGET" = "prod" ]; then
+            echo "url=${PROBE_URL}" >> "$GITHUB_OUTPUT"
+            echo "Scanning production: ${PROBE_URL}"
+          else
+            echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
+            echo "Scanning local stack: http://localhost:8080"
+          fi
+
+      # ----------------------------------------------------------------
+      # ZAP rules e scan
+      # ----------------------------------------------------------------
+      - name: Prepare ZAP rules
         run: |
           mkdir -p .zap
-          # Ignora finding noti accettabili in dev:
-          #   10202: HSTS missing (atteso in HTTP dev)
-          #   10038: CSP missing (gestito a livello prod / a parte)
-          #   10063: Permissions-Policy missing
-          [ -f .zap/rules.tsv ] || cat > .zap/rules.tsv <<'EOF'
-          10202	IGNORE	(HSTS atteso solo in prod TLS)
-          10038	WARN	(CSP gestita separatamente)
-          10063	WARN	(Permissions-Policy in roadmap)
+          cat > .zap/rules.tsv <<'EOF'
+          10027	IGNORE	(Suspicious comments in bundled JS – false positive)
+          10094	IGNORE	(Base64 in JS bundles – not secrets)
+          10096	IGNORE	(Unix timestamps in React DOM – informational)
+          10109	IGNORE	(Modern Web Application – informational)
+          10110	IGNORE	(Dangerous JS functions in bundled Turbopack/React – not app code)
+          90005	IGNORE	(Sec-Fetch-Dest missing – scanner artefact, not app issue)
           EOF
 
       - name: ZAP Baseline scan
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25  # v0.15.0
         with:
-          target: 'http://localhost:8080'
+          target: ${{ steps.target.outputs.url }}
           rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a -j'   # ajax spider attivo, json report
+          cmd_options: '-a -j'
           allow_issue_writing: false
-          fail_action: false      # non blocca PR finché non si stabilizza la baseline
+          fail_action: false
 
       - name: Dump compose logs on failure
-        if: failure()
+        if: failure() && steps.probe.outputs.target == 'local'
         working-directory: workspace/.github
         run: docker compose logs --tail=400
