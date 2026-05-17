@@ -110,6 +110,7 @@ jobs:
           set +e
           # Pre-crea uno stub SARIF: se uvx fallisce o non scrive nulla, upload-sarif
           # avrà comunque un file valido da consumare.
+          # shellcheck disable=SC2016  # $schema is literal JSON, not a shell variable
           printf '%s\n' '{"version":"2.1.0","$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"zizmor"}},"results":[]}]}' > zizmor.sarif
           uvx zizmor==1.5.2 --no-progress --format sarif .github/workflows > zizmor.sarif.tmp 2>zizmor.err
           rc=$?
