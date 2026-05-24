@@ -115,7 +115,7 @@ podman compose up --build -d      # oppure docker compose
 podman compose logs -f             # seguire i log
 curl -i http://localhost:8080/api/categories/   # verifica
 
-# test dell'api con Azurite (tutti passano nel compose)
+# test dell'api con Azurite (tutti passano nel compose, attualmente 205)
 podman compose exec api uv run pytest
 
 podman compose down -v             # cleanup
