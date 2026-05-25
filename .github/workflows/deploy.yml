@@ -68,14 +68,14 @@ jobs:
       # 1. Checkout dell'intera repo .github con tutte le sotto-repo
       # ------------------------------------------------------------------
       - name: Checkout .github repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           path: dot-github
 
       # Checkout separato di api e client (sono repo indipendenti)
       - name: Checkout api repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           repository: git-locus/api
@@ -83,7 +83,7 @@ jobs:
           path: api
 
       - name: Checkout client repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           repository: git-locus/client
