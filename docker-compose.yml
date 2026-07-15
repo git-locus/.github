@@ -41,8 +41,8 @@ services:
 
   # ---------------------------------------------------------------------------
   # API Django – settings_dev (SQLite, DEBUG=True), sorgente montato.
-  # --noreload evita che Django 5.2 scansioni la venv montata e incontri
-  # permessi volume non leggibili in Podman rootless.
+  # Hot reload attivo. Venv montata in /opt/venv (fuori da /app) così il
+  # reloader non scansiona il volume — compatibile con Podman rootless.
   # ---------------------------------------------------------------------------
   api:
     # Immagine ufficiale uv+python: niente curl|sh da internet, build deterministica.
@@ -56,8 +56,9 @@ services:
     volumes:
       # Sorgente live: ogni modifica al codice è subito visibile
       - ../api/src:/app:z
-      # Cache del virtualenv: uv sync è istantaneo dopo la prima volta
-      - api_venv:/app/.venv
+      # Venv fuori da /app così il reloader Django non scansiona il volume
+      # (evita errori permessi su Podman rootless)
+      - api_venv:/opt/venv
       # File statici condivisi con nginx
       - static_files:/static
     environment:
@@ -68,8 +69,9 @@ services:
       AZURITE_HOST: "azurite:10000"
       # ACS (email) non è usato in dev locale; placeholder per import.
       ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING:-endpoint=https://fake.communication.azure.com/;accesskey=fake}
-      PATH: /app/.venv/bin:/usr/local/bin:/usr/bin:/bin
-      VIRTUAL_ENV: /app/.venv
+      PATH: /opt/venv/bin:/usr/local/bin:/usr/bin:/bin
+      VIRTUAL_ENV: /opt/venv
+      UV_PROJECT_ENVIRONMENT: /opt/venv
       UV_LINK_MODE: copy
     # Bootstrap: sync deps (uv già nell'immagine), init blob, migrate, runserver.
     command: >
@@ -79,7 +81,7 @@ services:
         uv run python manage.py makemigrations account category chat notification post &&
         uv run python manage.py migrate --no-input &&
         uv run python manage.py collectstatic --no-input &&
-        uv run python manage.py runserver 0.0.0.0:8000 --noreload
+        uv run python manage.py runserver 0.0.0.0:8000
       "
     depends_on:
       azurite:
