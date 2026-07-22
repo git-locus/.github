@@ -78,7 +78,7 @@ services:
       sh -c "
         uv sync --frozen &&
         uv run python scripts/init_blob_containers.py &&
-        uv run python manage.py makemigrations account category chat notification post &&
+        uv run python manage.py makemigrations account category chat notification post support &&
         uv run python manage.py migrate --no-input &&
         uv run python manage.py collectstatic --no-input &&
         uv run python manage.py runserver 0.0.0.0:8000
