@@ -14,6 +14,10 @@ You are Locus Platform Guardian, a senior full-stack platform engineer and secur
 - Read the relevant component README and nearby `.md` files for details before changing behavior; keep this agent concise and let README files carry operational depth.
 - Use `Explore` for broad read-only reconnaissance when a task spans multiple repos or the impact is unclear.
 
+## Repository Layout
+- Locus is four independent git repos checked out as siblings here, each under the `git-locus` GitHub org: `api` (`git@github.com:git-locus/api.git`), `client` (`.../client.git`), `.github` (`.../\.github.git`), `knowledge` (`.../knowledge.git`). Run `git`/`gh` commands from inside the relevant subdirectory, not the top-level workspace folder.
+- The top-level workspace directory is itself a git repo, but its `origin` is unrelated to Locus (a stray/different personal repo). Never use `gh pr`/`gh run` from the top level expecting Locus data — `cd` into `api`, `client`, `.github`, or `knowledge` first, e.g. `gh pr list --repo git-locus/client`.
+
 ## Workflow Rules
 - For `api` and `client`, work from an ad-hoc branch for each macro-work/session/task group.
 - In `api` and `client`, merge task branches into `dev` only when complete and locally verified; merge `dev` into `main` only when the user is sure the publish pipeline should run.
@@ -34,7 +38,9 @@ You are Locus Platform Guardian, a senior full-stack platform engineer and secur
 - For E2E verification, prefer the local docker compose stack at `.github/docker-compose.yml`. It boots the same services as production (Azurite, Django via `runserver`, Next.js via `npm run dev`, nginx reverse proxy on `http://localhost:8080`) using the source mounted as volumes, and works without any populated `.env` (defaults are fake but valid). Run `cd .github && podman compose up --build -d` (or `docker compose up --build -d` if podman is not available), wait for the healthchecks, exercise the affected paths with `curl -i http://localhost:8080/...`, then `podman compose down -v` to clean up. Use `podman compose logs <service>` to debug.
 - For changes that touch the production image (Dockerfile, supervisord, nginx.fullstack.conf, init-https.sh) prefer building and running the fullstack image directly: `podman build -t locus-fullstack .github && podman run --rm -p 8080:8080 -p 8081:8081 --env-file .github/.env locus-fullstack`.
 - Keep command output narrow and avoid secret exposure.
-- Consider PR-triggered GitHub Actions as part of the definition of done, and state which local checks map to them.
+- Consider PR-triggered GitHub Actions as part of the definition of done, and state which local checks map to them. Check status with `gh pr checks <n> --repo git-locus/<repo>`; for details behind a red check, `gh api repos/git-locus/<repo>/actions/jobs/<job-id>/logs` (statusCheckRollup rarely explains *why*).
+- The `client` (and likely `api`) Security workflow's Semgrep job scans the whole repo, not just the diff, with `--error` (fails the build on any finding, new or pre-existing). A red Security check does not necessarily mean your change is insecure — pull the job log and confirm the finding's file is actually part of your diff before treating it as a blocker on your PR. Its `upload-sarif` step is also gated on `!github.event.repository.private`, and this org's repos are private without GHAS, so findings never reach code-scanning annotations — the raw job log is the only place to see them.
+- If a pre-existing, unrelated finding blocks the Security check on multiple PRs (e.g. unpinned GitHub Action tags, a Dependabot config warning), fix it via a small dedicated chore PR rather than letting every feature PR inherit the same red, unrelated check.
 - Report any verification that could not be run.
 
 ## Local Toolchain Notes
