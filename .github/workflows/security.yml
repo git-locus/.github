@@ -31,13 +31,13 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           persist-credentials: false
-      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5  # v3.3.0
+      - uses: hadolint/hadolint-action@2a66e89f53d0771bb131a7fa31f3136336094aa6  # v3.4.0
         with:
           dockerfile: Dockerfile
           format: sarif
           output-file: hadolint.sarif
           failure-threshold: warning
-      - uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5
+      - uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38  # v4.37.4
         if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: hadolint.sarif
@@ -62,7 +62,7 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
           exit-code: '1'
           trivyignores: .trivyignore
-      - uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5
+      - uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38  # v4.37.4
         if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: trivy.sarif
@@ -121,7 +121,7 @@ jobs:
             cat zizmor.err || true
           fi
           exit $rc
-      - uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5
+      - uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38  # v4.37.4
         if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: zizmor.sarif
