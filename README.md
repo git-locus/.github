@@ -36,8 +36,8 @@ Il `Dockerfile` usa un build **multi-stage**:
 
 | Stage | Base | Scopo |
 |---|---|---|
-| `client-deps` | `node:18-alpine` | Installa le dipendenze npm |
-| `client-builder` | `node:18-alpine` | Compila Next.js in modalità `standalone` |
+| `client-deps` | `node:20-alpine` | Installa le dipendenze npm |
+| `client-builder` | `node:20-alpine` | Compila Next.js in modalità `standalone` |
 | `api-builder` | `python:3.12-alpine` | Installa le dipendenze Python con `uv` |
 | `final` | `python:3.12-alpine` | Immagine runtime con nginx + supervisord |
 
@@ -93,14 +93,14 @@ docker compose up
 podman compose up
 ```
 
-Il compose avvia 5 servizi:
+Il compose avvia 4 servizi (nessun database Postgres: in locale Django usa
+`settings_dev`, che di default è SQLite):
 
 | Servizio | Immagine | Funzione |
 |---|---|---|
-| `db` | `postgres:16-alpine` | Database PostgreSQL |
 | `azurite` | `mcr.microsoft.com/azure-storage/azurite` | Emulatore Azure Blob Storage |
-| `api` | `python:3.12-alpine` | Django con hot-reload (`runserver`) |
-| `client` | `node:18-alpine` | Next.js con hot-reload (`npm run dev`) |
+| `api` | `ghcr.io/astral-sh/uv:python3.12-alpine` | Django con hot-reload (`runserver`) |
+| `client` | `node:20-alpine` | Next.js con hot-reload (`npm run dev`) |
 | `nginx` | `nginx:alpine` | Reverse proxy su `http://localhost:8080` |
 
 Il sorgente di `api/` e `client/` è montato come volume: le modifiche al codice sono subito visibili senza rebuild.
@@ -115,7 +115,7 @@ podman compose up --build -d      # oppure docker compose
 podman compose logs -f             # seguire i log
 curl -i http://localhost:8080/api/categories/   # verifica
 
-# test dell'api con Azurite (tutti passano nel compose, attualmente 205)
+# test dell'api con Azurite (l'intera suite passa nel compose)
 podman compose exec api uv run pytest
 
 podman compose down -v             # cleanup
@@ -234,6 +234,6 @@ pinnate per SHA40.
 
 ### Issue aperte
 
-- [`issues/2026-05-09-oidc-github-app-deploy.md`](issues/2026-05-09-oidc-github-app-deploy.md):
-  sostituire il PAT di deploy con GitHub App + OIDC verso Azure (alta priorità).
+- [git-locus/.github#15](https://github.com/git-locus/.github/issues/15): governance/security baseline,
+  include la migrazione del PAT di deploy a GitHub App + OIDC verso Azure (alta priorità).
 

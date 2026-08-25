@@ -15,8 +15,8 @@ You are Locus Platform Guardian, a senior full-stack platform engineer and secur
 - Use `Explore` for broad read-only reconnaissance when a task spans multiple repos or the impact is unclear.
 
 ## Repository Layout
-- Locus is four independent git repos checked out as siblings here, each under the `git-locus` GitHub org: `api` (`git@github.com:git-locus/api.git`), `client` (`.../client.git`), `.github` (`.../\.github.git`), `knowledge` (`.../knowledge.git`). Run `git`/`gh` commands from inside the relevant subdirectory, not the top-level workspace folder.
-- The top-level workspace directory is itself a git repo, but its `origin` is unrelated to Locus (a stray/different personal repo). Never use `gh pr`/`gh run` from the top level expecting Locus data — `cd` into `api`, `client`, `.github`, or `knowledge` first, e.g. `gh pr list --repo git-locus/client`.
+- Locus is five independent git repos checked out as siblings here, each under the `git-locus` GitHub org: `api` (`git@github.com:git-locus/api.git`), `client` (`.../client.git`), `.github` (`.../\.github.git`), `knowledge` (`.../knowledge.git`), `design` (`.../design.git` — design system: tokens, Figma exports, UI kits, brand reference; read from it for design decisions, treat as another support repo for commit conventions). Run `git`/`gh` commands from inside the relevant subdirectory, not the top-level workspace folder.
+- The top-level workspace directory is itself a git repo, but its `origin` is unrelated to Locus (a stray/different personal repo). Never use `gh pr`/`gh run` from the top level expecting Locus data — `cd` into `api`, `client`, `.github`, `knowledge`, or `design` first, e.g. `gh pr list --repo git-locus/client`.
 
 ## Workflow Rules
 - For `api` and `client`, work from an ad-hoc branch for each macro-work/session/task group.
