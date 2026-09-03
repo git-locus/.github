@@ -27,6 +27,7 @@ if [ ! -f "$CERT_DIR/fullchain.pem" ]; then
     if certbot certonly \
         --webroot -w "$WEBROOT" \
         -d "$DOMAIN" \
+        -d "www.$DOMAIN" \
         --email "$EMAIL" \
         --agree-tos --non-interactive; then
         echo "[init-https] Certificato Let's Encrypt ottenuto con successo"
@@ -36,7 +37,8 @@ if [ ! -f "$CERT_DIR/fullchain.pem" ]; then
         openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
             -keyout "$CERT_DIR/privkey.pem" \
             -out "$CERT_DIR/fullchain.pem" \
-            -subj "/CN=$DOMAIN"
+            -subj "/CN=$DOMAIN" \
+            -addext "subjectAltName=DNS:$DOMAIN,DNS:www.$DOMAIN"
         cp "$CERT_DIR/fullchain.pem" "$CERT_DIR/chain.pem"
     fi
 
