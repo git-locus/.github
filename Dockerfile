@@ -120,6 +120,6 @@ RUN mkdir -p /static && chown -R django:django /static
 EXPOSE 8080 8081
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
-    CMD curl -fsS http://127.0.0.1:8000/healthz/ || exit 1
+    CMD ["sh", "-c", "curl -fsS http://127.0.0.1:8000/healthz/ || exit 1"]
 
 CMD ["/usr/local/bin/init-https.sh"]
