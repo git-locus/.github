@@ -172,7 +172,8 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
 
 | Nome | Tipo | Descrizione |
 |---|---|---|
-| `INFRA_REPO_PAT` | Secret | PAT con `contents:write` su `docker2azure4student` |
+| `APP_CLIENT_ID` | Secret | Client ID della GitHub App "locus-deploy-bot" (installata su `api`, `client`, `docker2azure4student` con permesso Contents: Read and write) |
+| `APP_PRIVATE_KEY` | Secret | Chiave privata (.pem) della stessa GitHub App |
 | `CONTAINER_REGISTRY_PASSWORD` | Secret | Password/token per il container registry |
 | `APP_ENV_VARS_B64` | Secret | Contenuto di `app.env` codificato in base64 |
 | `REGISTRY_LOGIN_SERVER` | Variable | Es. `ghcr.io` |
