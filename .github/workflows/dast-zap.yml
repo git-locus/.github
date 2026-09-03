@@ -69,13 +69,28 @@ jobs:
       # ----------------------------------------------------------------
       # Fallback: checkout repos + compose stack (solo se serve)
       # ----------------------------------------------------------------
+      # Token installazione short-lived della GitHub App (vedi deploy.yml),
+      # riusato qui solo in lettura, e solo se serve davvero il fallback.
+      - name: Generate GitHub App token
+        id: app-token
+        if: steps.probe.outputs.target == 'local'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: git-locus
+          repositories: |
+            api
+            client
+          permission-contents: read
+
       - name: Checkout api
         if: steps.probe.outputs.target == 'local'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           repository: git-locus/api
-          token: ${{ secrets.INFRA_REPO_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
           ref: dev
           path: workspace/api
 
@@ -85,7 +100,7 @@ jobs:
         with:
           persist-credentials: false
           repository: git-locus/client
-          token: ${{ secrets.INFRA_REPO_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
           ref: dev
           path: workspace/client
 

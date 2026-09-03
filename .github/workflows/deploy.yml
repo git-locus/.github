@@ -11,8 +11,15 @@
 # Secret e variabili: tutti in QUESTA repo (.github) → Settings → Secrets / Variables
 #
 #   Secrets:
-#     INFRA_REPO_PAT                               PAT con contents:write su docker2azure4student
-#                                 e repo:write su .github, api, client
+#     APP_CLIENT_ID                Client ID della GitHub App "locus-deploy-bot" (o
+#                                  simile), installata su api, client,
+#                                  docker2azure4student con permesso Contents: Read
+#                                  and write. Sostituisce INFRA_REPO_PAT: il token
+#                                  generato è auto-scoped ai soli repo su cui la App
+#                                  è installata e scade dopo 1 ora, non è legato a un
+#                                  account personale. Settings della App → "Client ID"
+#                                  (non l'App ID numerico, deprecato per questo uso).
+#     APP_PRIVATE_KEY              Chiave privata (.pem) della stessa GitHub App.
 #     CONTAINER_REGISTRY_PASSWORD Token/password per il container registry
 #
 #   Variables (Settings → Variables → Actions):
@@ -68,26 +75,43 @@ jobs:
       # 1. Checkout dell'intera repo .github con tutte le sotto-repo
       # ------------------------------------------------------------------
       - name: Checkout .github repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           path: dot-github
 
+      # Token installazione short-lived (scade dopo 1h) della GitHub App,
+      # auto-scoped ai soli repo elencati sotto. Sostituisce INFRA_REPO_PAT.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: git-locus
+          repositories: |
+            api
+            client
+            docker2azure4student
+          # Cap esplicito del token a questo solo permesso, anche se in futuro
+          # la App venisse installata con permessi più ampi (zizmor: github-app).
+          permission-contents: write
+
       # Checkout separato di api e client (sono repo indipendenti)
       - name: Checkout api repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           repository: git-locus/api
-          token: ${{ secrets.INFRA_REPO_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
           path: api
 
       - name: Checkout client repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           repository: git-locus/client
-          token: ${{ secrets.INFRA_REPO_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
           path: client
 
       # ------------------------------------------------------------------
@@ -173,7 +197,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: Push sync bundle to infra repo
         env:
-          GH_TOKEN: ${{ secrets.INFRA_REPO_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           IMAGE_TAG: ${{ steps.manifest.outputs.image_tag }}
         run: |
           set -euo pipefail
