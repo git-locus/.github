@@ -97,7 +97,12 @@ services:
   # Client Next.js – nessuna build, sorgente montato, npm run dev con hot-reload
   # ---------------------------------------------------------------------------
   client:
-    image: node:20-alpine
+    # Matches client/.github/workflows/test.yml's actions/setup-node
+    # version (26) -- node:20-alpine's jsdom@30/undici@8 combo throws
+    # "webidl.util.markAsUncloneable is not a function" under Vitest,
+    # and NODE_OPTIONS=--no-webstorage (needed on Node >=25, see
+    # client/vitest.config.js) isn't a recognized flag before Node 22.
+    image: node:26-alpine
     working_dir: /app
     dns:
       - 1.1.1.1

@@ -100,10 +100,18 @@ Il compose avvia 4 servizi (nessun database Postgres: in locale Django usa
 |---|---|---|
 | `azurite` | `mcr.microsoft.com/azure-storage/azurite` | Emulatore Azure Blob Storage |
 | `api` | `ghcr.io/astral-sh/uv:python3.12-alpine` | Django con hot-reload (`runserver`) |
-| `client` | `node:20-alpine` | Next.js con hot-reload (`npm run dev`) |
+| `client` | `node:26-alpine` | Next.js con hot-reload (`npm run dev`) |
 | `nginx` | `nginx:alpine` | Reverse proxy su `http://localhost:8080` |
 
 Il sorgente di `api/` e `client/` è montato come volume: le modifiche al codice sono subito visibili senza rebuild.
+
+Il servizio `client` usa `node:26-alpine`, in linea con la versione Node
+usata da `client/.github/workflows/test.yml` (`actions/setup-node`,
+versione 26) — non `node:20-alpine`. Su Node 20, `npm run test:ci` fallisce
+con `webidl.util.markAsUncloneable is not a function` (incompatibilità tra
+`jsdom@30`/`undici@8` installati e quella versione di Node), quindi
+`podman compose exec client npm run test:ci` avrebbe altrimenti richiesto
+di lanciare `vitest` con un'immagine diversa da quella del compose.
 
 ### Verifica locale con compose
 
