@@ -60,6 +60,24 @@ permissions:
   contents: read
   packages: write
 
+# api and client each dispatch this workflow independently on their own
+# push-to-main (see their notify-deploy.yml); every run always rebuilds
+# from whatever is CURRENTLY on both repos' main, regardless of which one
+# triggered it. Without this, two dispatches close together (e.g. an api
+# release followed shortly by a client release) start two overlapping
+# build-and-sync runs, each pushing its own sync/<run-id>-<sha> bundle to
+# docker2azure4student -- whose own deploy-from-sync.yml has no
+# cross-branch concurrency guard (its `concurrency.group` is keyed by
+# branch name, which is unique per sync bundle), so two such bundles
+# landing close together can trigger two real, overlapping
+# Terraform-driven deploys against the same production app-service.
+# Queueing runs here (one at a time, oldest first) means at most one sync
+# bundle is ever in flight, which prevents that downstream race without
+# touching docker2azure4student itself.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 env:
   INFRA_REPO: git-locus/docker2azure4student
   INFRA_REPO_DEFAULT_BRANCH: main
