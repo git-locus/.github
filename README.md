@@ -225,11 +225,13 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
   server block HTTPS e `location /static/` via `include nginx/security-headers.conf`
   (api#232 — prima venivano ridichiarati solo in parte su `/static/`, perdendo
   silenziosamente il resto per via del non-inheritance di `add_header` di
-  nginx). Il client (`client/src/middleware.js`) aggiunge inoltre una CSP
-  nonce-based più stringente su `script-src` (con `strict-dynamic`) per le
-  proprie risposte — il browser applica l'intersezione di tutti gli header
-  CSP ricevuti, quindi questo restringe ulteriormente senza indebolire
-  quanto già impostato qui.
+  nginx). `script-src` mantiene `'unsafe-inline'` qui: un tentativo di CSP
+  nonce-based lato client (`client/src/middleware.js`) è stato deployato e
+  poi revertato in produzione perché la build statica di Next.js non
+  genera un nonce coerente con quello dell'header (il root layout non
+  chiama `headers()`), rendendo il sito non interattivo — vedi
+  [client#260](https://github.com/git-locus/client/issues/260) per
+  diagnosi e fix proposto.
 - **Rate limit nginx** per zone: `auth_zone` 5r/m sugli endpoint di
   login/signup/password-reset, `upload_zone` 2r/s sugli upload, `api_zone`
   20r/s generico.
