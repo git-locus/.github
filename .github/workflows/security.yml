@@ -62,6 +62,11 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
           exit-code: '1'
           trivyignores: .trivyignore
+          # Without this, trivy-action's own entrypoint unsets the severity
+          # filter whenever format=sarif ("Building SARIF report with all
+          # severities") so exit-code ends up gating on every severity
+          # (including LOW) instead of just CRITICAL,HIGH,MEDIUM above.
+          limit-severities-for-sarif: true
       - uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4.37.9
         if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
