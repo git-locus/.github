@@ -20,6 +20,8 @@ Questa repo è il **cuore del ciclo di vita** di Locus. Contiene:
 ├── nginx/
 │   ├── nginx.conf              # Config nginx per docker-compose locale
 │   ├── nginx.fullstack.conf    # Template nginx per il container di produzione
+│   ├── security-headers.conf   # Header di sicurezza condivisi (api#232), `include`d sia dal
+│   │                           # server block HTTPS che da location /static/ in nginx.fullstack.conf
 │   └── nginx-acme.conf         # Config nginx temporanea per ACME challenge
 ├── scripts/
 │   └── init-https.sh       # Entrypoint: genera nginx.conf, ottiene cert TLS, avvia supervisord
@@ -219,7 +221,15 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
   `ssl_session_tickets off`.
 - **Headers**: HSTS 1y preload, CSP restrittiva, `X-Frame-Options DENY`,
   `Referrer-Policy strict-origin-when-cross-origin`, `Permissions-Policy`
-  che blocca camera/mic/geolocation/payment/USB, COOP/CORP.
+  che blocca camera/mic/geolocation/payment/USB, COOP/CORP. Condivisi tra il
+  server block HTTPS e `location /static/` via `include nginx/security-headers.conf`
+  (api#232 — prima venivano ridichiarati solo in parte su `/static/`, perdendo
+  silenziosamente il resto per via del non-inheritance di `add_header` di
+  nginx). Il client (`client/src/middleware.js`) aggiunge inoltre una CSP
+  nonce-based più stringente su `script-src` (con `strict-dynamic`) per le
+  proprie risposte — il browser applica l'intersezione di tutti gli header
+  CSP ricevuti, quindi questo restringe ulteriormente senza indebolire
+  quanto già impostato qui.
 - **Rate limit nginx** per zone: `auth_zone` 5r/m sugli endpoint di
   login/signup/password-reset, `upload_zone` 2r/s sugli upload, `api_zone`
   20r/s generico.
