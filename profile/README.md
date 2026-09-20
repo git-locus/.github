@@ -27,7 +27,7 @@ No vanity metrics. No outrage-optimized feeds. Just a place to think, share, and
 ## People of Locus
 
 **01 · The Starters**: They don't wait for permission. Half-formed thoughts, messy sketches, late-night notes. Ideas don't
-need to be finished to matter — they just need a place to begin.
+need to be finished to matter, they just need a place to begin.
 
 **02 · The Builders**: They see potential where others see drafts. They join not to own, but to shape. The best ideas are
 never built alone.
@@ -35,7 +35,7 @@ never built alone.
 **03 · The Curious**: Not here to scroll, here to believe. They chase sparks and weird early signals. Every movement starts
  with curiosity.
 
-**04 · The Backers**: They recognize signals early, support with trust, resources, and belief — sometimes before the world
+**04 · The Backers**: They recognize signals early, support with trust, resources, and belief, sometimes before the world
 is ready.
 
 ## Stay in the loop

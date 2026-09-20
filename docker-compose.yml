@@ -42,7 +42,7 @@ services:
   # ---------------------------------------------------------------------------
   # API Django – settings_dev (SQLite, DEBUG=True), sorgente montato.
   # Hot reload attivo. Venv montata in /opt/venv (fuori da /app) così il
-  # reloader non scansiona il volume — compatibile con Podman rootless.
+  # reloader non scansiona il volume, compatibile con Podman rootless.
   # ---------------------------------------------------------------------------
   api:
     # Immagine ufficiale uv+python: niente curl|sh da internet, build deterministica.

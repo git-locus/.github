@@ -5,7 +5,7 @@ name: DAST – ZAP Baseline 🌐
 # Strategia:
 #   1. Prova a scansionare il sito di produzione (https://$DOMAIN).
 #   2. Se la produzione non è raggiungibile, fa fallback sullo stack
-#      Docker Compose locale (dev) — ma il job emette un errore
+#      Docker Compose locale (dev); il job emette comunque un errore
 #      per segnalare che la scansione non ha coperto la configurazione reale.
 #
 # La variabile DOMAIN deve essere configurata in:

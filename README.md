@@ -1,4 +1,4 @@
-# Locus — repo di orchestrazione `.github`
+# Locus, repo di orchestrazione `.github`
 
 Questa repo è il **cuore del ciclo di vita** di Locus. Contiene:
 
@@ -45,9 +45,9 @@ Il `Dockerfile` usa un build **multi-stage**:
 
 L'immagine finale contiene **tre processi** gestiti da supervisord:
 
-- `gunicorn` — Django API su `127.0.0.1:8000`
-- `node server.js` — Next.js standalone su `127.0.0.1:3000`
-- `nginx` — Reverse proxy pubblico, espone `:8080` (HTTP→HTTPS redirect) e `:8081` (HTTPS)
+- `gunicorn`: Django API su `0.0.0.0:8000` (nginx gli parla comunque solo via `127.0.0.1`; il bind su tutte le interfacce resta da restringere, vedi git-locus/api#157)
+- `node server.js`: Next.js standalone su `127.0.0.1:3000`
+- `nginx`: Reverse proxy pubblico, espone `:8080` (HTTP→HTTPS redirect) e `:8081` (HTTPS)
 
 ### Porte esposte
 
@@ -109,7 +109,7 @@ Il sorgente di `api/` e `client/` è montato come volume: le modifiche al codice
 
 Il servizio `client` usa `node:26-alpine`, in linea con la versione Node
 usata da `client/.github/workflows/test.yml` (`actions/setup-node`,
-versione 26) — non `node:20-alpine`. Su Node 20, `npm run test:ci` fallisce
+versione 26), non `node:20-alpine`: su Node 20, `npm run test:ci` fallisce
 con `webidl.util.markAsUncloneable is not a function` (incompatibilità tra
 `jsdom@30`/`undici@8` installati e quella versione di Node), quindi
 `podman compose exec client npm run test:ci` avrebbe altrimenti richiesto
@@ -206,7 +206,7 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
 | `git-locus/api` | Backend Django |
 | `git-locus/client` | Frontend Next.js |
 | `git-locus/.github` (questa) | Orchestrazione build e deploy |
-| `git-locus/docker2azure4student` | Infra Azure — riceve il sync bundle e fa il deploy |
+| `git-locus/docker2azure4student` | Infra Azure, riceve il sync bundle e fa il deploy |
 | `git-locus/knowledge` | Documentazione e guide operative |
 
 ---
@@ -217,21 +217,30 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
 
 - **Container non-root**: nginx, gunicorn e Next.js girano come utente non
   privilegiato `django` (vedi `Dockerfile` + `supervisord.conf`).
+- **Next.js su loopback**: `node server.js` bind su `HOSTNAME=127.0.0.1`
+  (non `0.0.0.0`), dato che nginx gli parla comunque solo via
+  `127.0.0.1:3000`. Cosi' anche se un futuro `docker run` pubblicasse per
+  errore la porta 3000, il processo rifiuta comunque connessioni esterne
+  invece di fare affidamento solo sul fatto che quella porta non e'
+  pubblicata oggi. `gunicorn` ha lo stesso identico problema (bind
+  `0.0.0.0:8000`, non ancora sistemato) ma e' parte della questione piu'
+  ampia in git-locus/api#157, non di questa fix.
 - **TLS**: solo TLSv1.2/1.3, cipher Mozilla Intermediate, OCSP stapling,
   `ssl_session_tickets off`.
 - **Headers**: HSTS 1y preload, CSP restrittiva, `X-Frame-Options DENY`,
   `Referrer-Policy strict-origin-when-cross-origin`, `Permissions-Policy`
   che blocca camera/mic/geolocation/payment/USB, COOP/CORP. Condivisi tra il
   server block HTTPS e `location /static/` via `include nginx/security-headers.conf`
-  (api#232 — prima venivano ridichiarati solo in parte su `/static/`, perdendo
-  silenziosamente il resto per via del non-inheritance di `add_header` di
-  nginx). `script-src` mantiene `'unsafe-inline'` qui: un tentativo di CSP
-  nonce-based lato client (`client/src/middleware.js`) è stato deployato e
-  poi revertato in produzione perché la build statica di Next.js non
-  genera un nonce coerente con quello dell'header (il root layout non
-  chiama `headers()`), rendendo il sito non interattivo — vedi
-  [client#260](https://github.com/git-locus/client/issues/260) per
-  diagnosi e fix proposto.
+  (api#232: `add_header` di nginx non fa inheritance tra blocchi, quindi
+  dichiararli solo in parte su `/static/` ne perderebbe silenziosamente
+  il resto). `script-src` mantiene `'unsafe-inline'` qui come baseline a
+  livello nginx: il browser applica l'intersezione di tutti gli header
+  CSP ricevuti, e `client` sovrappone il proprio, più restrittivo,
+  basato su nonce (`client/src/middleware.js`, vedi
+  [client/README.md](https://github.com/git-locus/client/blob/main/README.md#security)),
+  quindi la policy nonce-based non viene indebolita da questa. Questo
+  file deve però restare sicuro da solo per tutto ciò che nginx serve
+  direttamente (es. `/static/`), dove nessun middleware Next.js gira mai.
 - **Rate limit nginx** per zone: `auth_zone` 5r/m sugli endpoint di
   login/signup/password-reset, `upload_zone` 2r/s sugli upload, `api_zone`
   20r/s generico.
