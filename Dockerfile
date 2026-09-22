@@ -31,6 +31,11 @@ ARG NODE_VERSION=20
 # -----------------------------------------------------------------------------
 FROM node:${NODE_VERSION}-alpine AS client-deps
 RUN apk add --no-cache libc6-compat
+# npm 10.x (bundled with node:20) has a real Arborist bug resolving
+# circular/optional peer dependencies (TypeError: Cannot read properties
+# of null (reading 'edgesOut') in build-ideal-tree.js), reproducible with
+# vitest 5's peer set; npm 11 fixes it and still supports Node 20.
+RUN npm install -g npm@11
 WORKDIR /client
 COPY client/package.json ./
 RUN npm install
