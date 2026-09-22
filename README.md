@@ -261,8 +261,3 @@ Le repo `api` e `client` hanno workflow `security.yml` analoghi (bandit, semgrep
 pip-audit / npm-audit, codeql, trivy-fs, gitleaks). Tutte le action usate sono
 pinnate per SHA40.
 
-### Issue aperte
-
-- [git-locus/.github#15](https://github.com/git-locus/.github/issues/15): governance/security baseline,
-  include la migrazione del PAT di deploy a GitHub App + OIDC verso Azure (alta priorità).
-
