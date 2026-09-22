@@ -20,7 +20,7 @@ Questa repo è il **cuore del ciclo di vita** di Locus. Contiene:
 ├── nginx/
 │   ├── nginx.conf              # Config nginx per docker-compose locale
 │   ├── nginx.fullstack.conf    # Template nginx per il container di produzione
-│   ├── security-headers.conf   # Header di sicurezza condivisi (api#232), `include`d sia dal
+│   ├── security-headers.conf   # Header di sicurezza condivisi, `include`d sia dal
 │   │                           # server block HTTPS che da location /static/ in nginx.fullstack.conf
 │   └── nginx-acme.conf         # Config nginx temporanea per ACME challenge
 ├── scripts/
@@ -45,7 +45,7 @@ Il `Dockerfile` usa un build **multi-stage**:
 
 L'immagine finale contiene **tre processi** gestiti da supervisord:
 
-- `gunicorn`: Django API su `127.0.0.1:8000` (nginx gli parla comunque solo via loopback; il bind e' stato ristretto, vedi git-locus/api#157)
+- `gunicorn`: Django API su `127.0.0.1:8000`, non su tutte le interfacce (nginx gli parla comunque solo via loopback)
 - `node server.js`: Next.js standalone su `127.0.0.1:3000`
 - `nginx`: Reverse proxy pubblico, espone `:8080` (HTTP→HTTPS redirect) e `:8081` (HTTPS)
 
@@ -223,14 +223,14 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
   comunque a entrambi solo via loopback. Cosi' anche se un futuro
   `docker run` pubblicasse per errore la porta 3000 o 8000, il processo
   rifiuta comunque connessioni esterne invece di fare affidamento solo sul
-  fatto che quella porta non e' pubblicata oggi (git-locus/api#157).
+  fatto che quella porta non e' pubblicata oggi.
 - **TLS**: solo TLSv1.2/1.3, cipher Mozilla Intermediate, OCSP stapling,
   `ssl_session_tickets off`.
 - **Headers**: HSTS 1y preload, CSP restrittiva, `X-Frame-Options DENY`,
   `Referrer-Policy strict-origin-when-cross-origin`, `Permissions-Policy`
   che blocca camera/mic/geolocation/payment/USB, COOP/CORP. Condivisi tra il
   server block HTTPS e `location /static/` via `include nginx/security-headers.conf`
-  (api#232: `add_header` di nginx non fa inheritance tra blocchi, quindi
+  (`add_header` di nginx non fa inheritance tra blocchi, quindi
   dichiararli solo in parte su `/static/` ne perderebbe silenziosamente
   il resto). `script-src` mantiene `'unsafe-inline'` qui come baseline a
   livello nginx: il browser applica l'intersezione di tutti gli header
