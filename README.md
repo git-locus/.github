@@ -254,8 +254,8 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
 
 | Workflow | Trigger | Cosa fa |
 |---|---|---|
-| `security.yml` | push/PR su `dev`/`main`, weekly cron | hadolint, trivy-config (CRITICAL/HIGH/MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history con allowlist) |
-| `dast-zap.yml` | nightly + on-PR | Avvia lo stack docker compose effimero ed esegue ZAP baseline contro `http://localhost:8080` |
+| `security.yml` | PR su `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL/HIGH/MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history con allowlist) |
+| `dast-zap.yml` | weekly cron, PR (su modifiche al `Dockerfile`), `workflow_dispatch` | Avvia lo stack docker compose effimero ed esegue ZAP baseline contro `http://localhost:8080` |
 
 Le repo `api` e `client` hanno workflow `security.yml` analoghi (bandit, semgrep,
 pip-audit / npm-audit, codeql, trivy-fs, gitleaks). Tutte le action usate sono
