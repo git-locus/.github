@@ -185,17 +185,56 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
 | `APP_CLIENT_ID` | Secret | Client ID della GitHub App "locus-deploy-bot" (installata su `api`, `client`, `docker2azure4student` con permesso Contents: Read and write) |
 | `APP_PRIVATE_KEY` | Secret | Chiave privata (.pem) della stessa GitHub App |
 | `CONTAINER_REGISTRY_PASSWORD` | Secret | Password/token per il container registry |
-| `APP_ENV_VARS_B64` | Secret | Contenuto di `app.env` codificato in base64 |
 | `REGISTRY_LOGIN_SERVER` | Variable | Es. `ghcr.io` |
 | `IMAGE_REGISTRY` | Variable | Es. `ghcr.io/git-locus` |
 | `IMAGE_NAME` | Variable | Es. `locus` |
 | `CONTAINER_REGISTRY_USERNAME` | Variable | Username del registry |
 
+`APP_ENV_VARS_B64` non è un secret di questa repo: vive su
+`docker2azure4student` e serve solo a inizializzare `app-env-base` su
+Key Vault al primissimo deploy di un ambiente nuovo (vedi sotto).
+
 ### Aggiornare le variabili d'ambiente di produzione
 
-1. Modifica il file `.env` nella root della repo locale (vedi `app.env.example`).
-2. Rigenera il base64: `base64 -w0 .env > .env.b64`
-3. Copia il contenuto di `.env.b64` nel secret `APP_ENV_VARS_B64` su GitHub.
+`app.env.example` in questa repo resta il riferimento per **quali**
+variabili esistono; il valore attuale, però, non vive più in un secret
+GitHub una volta che l'ambiente è stato creato: vive nel secret
+`app-env-base` del Key Vault Azure (`locus-kv`), letto e riassemblato
+dal deploy workflow ad ogni run. Solo due identità hanno accesso ai
+secret di quel Key Vault (access policy, non RBAC): il service
+principal `locus-deploy` (usato dalla pipeline via OIDC) e la managed
+identity `locus-vm` (sola lettura, usata dalla VM). Nessun account
+umano ce l'ha per default.
+
+Per aggiungere o cambiare una variabile:
+
+1. Chi deve farlo si dà accesso temporaneo (richiede ruolo Owner/
+   Contributor sulla subscription):
+
+   ```bash
+   az keyvault set-policy --name locus-kv --upn <la-tua-email> \
+     --secret-permissions get list set
+   ```
+
+2. Legge, modifica, riscrive `app-env-base`:
+
+   ```bash
+   az keyvault secret show --vault-name locus-kv --name app-env-base \
+     --query value -o tsv | base64 -d > .env
+   # modifica .env con un editor
+   base64 -w0 .env > .env.b64
+   az keyvault secret set --vault-name locus-kv --name app-env-base --file .env.b64
+   shred -u .env .env.b64
+   ```
+
+3. Si revoca l'accesso appena finito:
+
+   ```bash
+   az keyvault delete-policy --name locus-kv --upn <la-tua-email>
+   ```
+
+4. La modifica diventa effettiva al prossimo deploy (il workflow rilegge
+   `app-env-base` ad ogni run).
 
 ---
 
@@ -224,6 +263,18 @@ Configurati in **questa repo** → Settings → Secrets / Variables:
   `docker run` pubblicasse per errore la porta 3000 o 8000, il processo
   rifiuta comunque connessioni esterne invece di fare affidamento solo sul
   fatto che quella porta non e' pubblicata oggi.
+- **`/admin` dietro SSO GitHub-org**: `nginx.fullstack.conf` chiede a
+  oauth2-proxy (processo separato, `127.0.0.1:4180`, solo provider
+  GitHub, membro dell'org `git-locus`) tramite `auth_request` prima di
+  inoltrare qualunque richiesta a `/admin/`; senza sessione valida
+  l'utente viene rediretto direttamente al login GitHub
+  (`--skip-provider-button`), Django non viene mai raggiunto. Il login
+  staff di Django resta comunque attivo sopra, come secondo livello
+  indipendente: anche una sessione oauth2-proxy compromessa non basta da
+  sola. Configurazione: `OAUTH2_PROXY_CLIENT_ID`/`_CLIENT_SECRET`/
+  `_COOKIE_SECRET` nell'`app-env-base` di Key Vault (vedi sotto), OAuth
+  App creata su GitHub → Org `git-locus` → Settings → Developer
+  settings → OAuth Apps, callback `https://<dominio>/oauth2/callback`.
 - **TLS**: solo TLSv1.2/1.3, cipher Mozilla Intermediate, OCSP stapling,
   `ssl_session_tickets off`.
 - **Headers**: HSTS 1y preload, CSP restrittiva, `X-Frame-Options DENY`,

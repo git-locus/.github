@@ -78,12 +78,32 @@ RUN apk add --no-cache \
     && pip install --no-cache-dir certbot \
     && rm -rf /var/cache/apk/*
 
-# --- Utenti non-root per Next.js e Django ---
+# --- Utenti non-root per Next.js, Django e oauth2-proxy ---
 # nginx, supervisord e certbot continuano a girare come root (richiesto per
 # legare porte privilegiate, scrivere /etc/letsencrypt, ecc.). Solo i
 # processi applicativi droppano privilegi.
 RUN addgroup -S nodejs && adduser -S -G nodejs nextjs \
-    && addgroup -S django && adduser -S -G django django
+    && addgroup -S django && adduser -S -G django django \
+    && addgroup -S oauth2proxy && adduser -S -G oauth2proxy oauth2proxy
+
+# ---- oauth2-proxy: gate su /admin (vedi nginx.fullstack.conf) ----
+# Binario ufficiale scaricato e verificato via checksum pubblicato, non
+# un'immagine Docker esterna: resta un unico livello di build riproducibile.
+ARG OAUTH2_PROXY_VERSION=7.15.4
+ARG TARGETARCH
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+        amd64) OAUTH2_PROXY_SHA256="4fbe902189aab713d9c0519b90a645032d4636ecb523dc36f5cc312d8ebef1e2" ;; \
+        arm64) OAUTH2_PROXY_SHA256="b3fb0b61aecfb4b776dccb6daff406676ed0ead74245dc6e4bdf71f993eb1710" ;; \
+        *) echo "unsupported arch: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    ARCHIVE="oauth2-proxy-v${OAUTH2_PROXY_VERSION}.linux-${TARGETARCH}.tar.gz"; \
+    curl -fsSLO "https://github.com/oauth2-proxy/oauth2-proxy/releases/download/v${OAUTH2_PROXY_VERSION}/${ARCHIVE}"; \
+    echo "${OAUTH2_PROXY_SHA256}  ${ARCHIVE}" | sha256sum -c -; \
+    mkdir -p /tmp/oauth2-proxy && tar -xzf "${ARCHIVE}" -C /tmp/oauth2-proxy; \
+    mv /tmp/oauth2-proxy/*/oauth2-proxy /usr/local/bin/oauth2-proxy; \
+    chmod +x /usr/local/bin/oauth2-proxy; \
+    rm -rf "${ARCHIVE}" /tmp/oauth2-proxy
 
 # ---- API (Django + gunicorn) ----
 WORKDIR /api
