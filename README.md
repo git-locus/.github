@@ -25,9 +25,16 @@ Questa repo è il **cuore del ciclo di vita** di Locus. Contiene:
 │   └── nginx-acme.conf         # Config nginx temporanea per ACME challenge
 ├── scripts/
 │   └── init-https.sh       # Entrypoint: genera nginx.conf, ottiene cert TLS, avvia supervisord
+├── agents/
+│   └── locus-platform-guardian.agent.md   # Agente di sviluppo/review per tutto il workspace
+├── profile/
+│   └── README.md           # Pagina pubblica dell'organizzazione GitHub
 └── .github/
+    ├── dependabot.yml      # Aggiornamenti automatici delle dipendenze
     └── workflows/
-        └── deploy.yml      # Workflow di build e sync verso l'infra Azure
+        ├── deploy.yml      # Workflow di build e sync verso l'infra Azure
+        ├── security.yml    # Controlli di sicurezza su questa repo
+        └── dast-zap.yml    # Scansione DAST (ZAP) dello stack compose
 ```
 
 ---
@@ -145,7 +152,9 @@ podman run --rm -p 8080:8080 -p 8081:8081 --env-file .github/.env locus-fullstac
 
 ### Branch, pull request e documentazione
 
-La convenzione branch ad-hoc → pull request → `dev` vale per i repository applicativi `api` e `client`. Quando il lavoro è completo e verificato, apri una pull request verso `dev` e considera i controlli GitHub Actions della PR parte della definizione di pronto.
+La convenzione branch ad-hoc → pull request → `dev` vale per i repository applicativi `api` e `client`: il branch si chiama `<tipo>/<descrizione-breve>` (`feature/...`, `fix/...`, `chore/...`, `docs/...`). Quando il lavoro è completo e verificato, apri una pull request verso `dev` e considera i controlli GitHub Actions della PR parte della definizione di pronto.
+
+La promozione da `dev` a `main` (che in `api` e `client` mette in produzione) passa **sempre da una pull request**, mai da un push locale: `gh pr create --base main --head dev`, attendi i controlli, poi `gh pr merge --merge` (merge commit semplice, non squash e non rebase). Dopo il merge `main` ha un commit di merge che `dev` non ha, quindi un fast-forward fallisce: è normale, si riallinea con `git checkout dev && git merge origin/main` e un push di `dev`.
 
 Per questa repo di orchestrazione è accettabile committare e pushare direttamente su `main` quando la modifica è circoscritta e verificata. Prima del merge in `dev` di `api` o `client`, e sempre prima di modifiche architetturali o operative importanti, aggiorna i README e gli altri file `.md` coinvolti: non solo il README principale, ma ogni documento Markdown pertinente nei repository interessati.
 
@@ -163,8 +172,14 @@ push su main (api / client / .github)
                                           │
                                           ▼
                                     Workflow B (infra repo)
-                                    └─ Deploy su Azure Container Instance
+                                    └─ Deploy del container sulla VM Azure
+                                       (docker pull con retry, poi restart)
 ```
+
+Il workflow ricostruisce sempre l'immagine da `main` di **entrambe** le repo
+`api` e `client`: non si può rilasciare una sola delle due. `deploy.yml` ha
+un `concurrency` (`group: deploy-production`, `cancel-in-progress: false`),
+quindi due dispatch ravvicinati si mettono in coda invece di sovrapporsi.
 
 ### Trigger
 
