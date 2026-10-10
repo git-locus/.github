@@ -63,3 +63,15 @@ commits = [
   "a33240a0421fe2fe03b40f934742b60d74df27d4",  # 2024-01-14 Revert merge
   "f03f34accda644d3c078b40e4791f6cec0f3b359",  # 2023-09-05 Implemented authentication app
 ]
+
+# Published SHA256 checksums of the oauth2-proxy release archives, pinned in
+# the Dockerfile and verified at build time. Public values, not secrets.
+[[allowlists]]
+description = "oauth2-proxy release checksums in the Dockerfile"
+condition = "AND"
+paths = [
+  '''Dockerfile''',
+]
+regexes = [
+  '''[0-9a-f]{64}''',
+]
