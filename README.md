@@ -76,7 +76,9 @@ L'entrypoint `scripts/init-https.sh` al primo avvio:
 4. Se certbot fallisce (es. dominio non raggiungibile), genera un **certificato self-signed** come fallback.
 5. Avvia `supervisord` con nginx, gunicorn e Next.js.
 
-Il rinnovo automatico è gestito da un programma supervisord (`certbot-renew`) che esegue `certbot renew` ogni 12 ore.
+Il rinnovo automatico è gestito da un programma supervisord (`certbot-renew`) che esegue `certbot renew` ogni 12 ore e, dopo un rinnovo, ricarica nginx senza downtime (`--deploy-hook 'nginx -s reload'`). L'output di certbot finisce nei log del container (journald sulla VM). Certbot rinnova solo quando mancano meno di 30 giorni alla scadenza.
+
+Se il rinnovo non riesce, lo segnala `site-health.yml`: fallisce quando il certificato ha meno di 14 giorni di validita'. Verifica del percorso di rinnovo senza toccare il certificato in uso: `certbot renew --dry-run` dentro il container (usa lo staging di Let's Encrypt).
 
 **Variabili richieste:**
 
@@ -263,7 +265,7 @@ Azure Monitor avvisa via email gli Owner della subscription quando la memoria
 disponibile della VM scende sotto soglia. Dettagli in `docker2azure4student/README.md`, sezione
 Observability.
 
-Il sito e il certificato sono controllati ogni 30 minuti dal workflow `site-health.yml`.
+Il sito e il certificato sono controllati ogni 10 minuti dal workflow `site-health.yml`.
 
 Dove guardare per primo in caso di lentezza:
 
@@ -345,7 +347,7 @@ Dove guardare per primo in caso di lentezza:
 |---|---|---|
 | `security.yml` | PR su `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL/HIGH/MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history con allowlist) |
 | `dast-zap.yml` | weekly cron, PR (su modifiche al `Dockerfile`), `workflow_dispatch` | Avvia lo stack docker compose effimero ed esegue ZAP baseline contro `http://localhost:8080` |
-| `site-health.yml` | cron ogni 30 minuti, `workflow_dispatch` | Verifica che `https://$DOMAIN/landing` risponda 200 e che il certificato TLS abbia almeno 14 giorni di validita'. Se fallisce, GitHub notifica il workflow fallito. Dura pochi secondi e la repo e' pubblica, quindi non consuma minuti a pagamento. Sostituisce un test di disponibilita' Azure, a pagamento per esecuzione. |
+| `site-health.yml` | cron ogni 10 minuti, `workflow_dispatch` | Verifica che `https://$DOMAIN/landing` risponda 200 e che il certificato TLS abbia almeno 14 giorni di validita'. Se fallisce, GitHub notifica il workflow fallito. Dura pochi secondi e la repo e' pubblica, quindi non consuma minuti a pagamento. Sostituisce un test di disponibilita' Azure, a pagamento per esecuzione. |
 
 Le repo `api` e `client` hanno workflow `security.yml` analoghi (bandit, semgrep,
 pip-audit / npm-audit, codeql, trivy-fs, gitleaks). Tutte le action usate sono
