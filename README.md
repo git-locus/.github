@@ -265,7 +265,7 @@ Azure Monitor avvisa via email gli Owner della subscription quando la memoria
 disponibile della VM scende sotto soglia. Dettagli in `docker2azure4student/README.md`, sezione
 Observability.
 
-Il sito e il certificato sono controllati ogni ora dal workflow `site-health.yml`.
+Il sito e il certificato sono controllati dal workflow `site-health.yml`, schedulato ogni ora. Lo schedule di GitHub e' best effort: i run possono arrivare in ritardo o saltare, quindi il controllo serve a vedere un certificato in scadenza, non a garantire un tempo di rilevamento di un'interruzione.
 
 Dove guardare per primo in caso di lentezza:
 
