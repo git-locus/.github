@@ -265,7 +265,7 @@ Azure Monitor avvisa via email gli Owner della subscription quando la memoria
 disponibile della VM scende sotto soglia. Dettagli in `docker2azure4student/README.md`, sezione
 Observability.
 
-Il sito e il certificato sono controllati ogni 15 minuti dal workflow `site-health.yml`.
+Il sito e il certificato sono controllati ogni ora dal workflow `site-health.yml`.
 
 Dove guardare per primo in caso di lentezza:
 
@@ -347,7 +347,7 @@ Dove guardare per primo in caso di lentezza:
 |---|---|---|
 | `security.yml` | PR su `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL/HIGH/MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history con allowlist) |
 | `dast-zap.yml` | weekly cron, PR (su modifiche al `Dockerfile`), `workflow_dispatch` | Avvia lo stack docker compose effimero ed esegue ZAP baseline contro `http://localhost:8080` |
-| `site-health.yml` | cron ogni 15 minuti, `workflow_dispatch` | Verifica che `https://$DOMAIN/landing` risponda 200 e che il certificato TLS abbia almeno 14 giorni di validita'. Se fallisce, GitHub notifica il workflow fallito. Dura pochi secondi e la repo e' pubblica, quindi non consuma minuti a pagamento. Sostituisce un test di disponibilita' Azure, a pagamento per esecuzione. |
+| `site-health.yml` | cron ogni ora (minuto 7), `workflow_dispatch` | Verifica che `https://$DOMAIN/landing` risponda 200 e che il certificato TLS abbia almeno 14 giorni di validita'. Se fallisce, GitHub notifica il workflow fallito. Dura pochi secondi e la repo e' pubblica, quindi non consuma minuti a pagamento. Sostituisce un test di disponibilita' Azure, a pagamento per esecuzione. |
 
 Le repo `api` e `client` hanno workflow `security.yml` analoghi (bandit, semgrep,
 pip-audit / npm-audit, codeql, trivy-fs, gitleaks). Tutte le action usate sono
