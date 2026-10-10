@@ -37,7 +37,7 @@ jobs:
           format: sarif
           output-file: hadolint.sarif
           failure-threshold: warning
-      - uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd  # v4.38.1
+      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2
         if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: hadolint.sarif
@@ -67,7 +67,7 @@ jobs:
           # severities") so exit-code ends up gating on every severity
           # (including LOW) instead of just CRITICAL,HIGH,MEDIUM above.
           limit-severities-for-sarif: true
-      - uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd  # v4.38.1
+      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2
         if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: trivy.sarif
@@ -106,7 +106,7 @@ jobs:
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
       - name: Run actionlint
         run: ./actionlint -color
-      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         if: always()  # gira anche se actionlint ha trovato issue
       - name: zizmor
         if: always()  # gira anche se actionlint ha trovato issue
@@ -126,7 +126,7 @@ jobs:
             cat zizmor.err || true
           fi
           exit $rc
-      - uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd  # v4.38.1
+      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2
         if: always() && !github.event.repository.private  # GHAS Code Scanning richiede repo pubblica o GHAS abilitato
         with:
           sarif_file: zizmor.sarif
