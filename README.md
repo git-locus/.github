@@ -258,9 +258,8 @@ Ad ogni deploy `docker2azure4student` prepara la VM (swap da 2 GiB con
 container con il log driver `journald`, quindi i log di nginx, Next.js e
 Django sopravvivono al `docker rm` del deploy successivo. Gunicorn ricicla
 i worker (`--max-requests` con jitter, vedi `api/entrypoint.sh`). Un alert
-Azure Monitor avvisa via email quando la memoria disponibile della VM scende
-sotto soglia (attivo solo se `alert_email` e' valorizzato nelle variabili
-Terraform). Dettagli in `docker2azure4student/README.md`, sezione
+Azure Monitor avvisa via email gli Owner della subscription quando la memoria
+disponibile della VM scende sotto soglia. Dettagli in `docker2azure4student/README.md`, sezione
 Observability.
 
 Dove guardare per primo in caso di lentezza:
