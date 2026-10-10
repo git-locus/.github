@@ -251,6 +251,26 @@ Per aggiungere o cambiare una variabile:
 4. La modifica diventa effettiva al prossimo deploy (il workflow rilegge
    `app-env-base` ad ogni run).
 
+### Log e memoria in produzione
+
+Ad ogni deploy `docker2azure4student` prepara la VM (swap da 2 GiB con
+`vm.swappiness=10`, journald persistente con tetto a 300 MB) e avvia il
+container con il log driver `journald`, quindi i log di nginx, Next.js e
+Django sopravvivono al `docker rm` del deploy successivo. Gunicorn ricicla
+i worker (`--max-requests` con jitter, vedi `api/entrypoint.sh`). Un alert
+Azure Monitor avvisa via email gli Owner della subscription quando la memoria
+disponibile della VM scende sotto soglia. Dettagli in `docker2azure4student/README.md`, sezione
+Observability.
+
+Dove guardare per primo in caso di lentezza:
+
+1. Log Analytics, tabella `AppRequests`: durata e fallimenti delle richieste
+   Django.
+2. Metriche della VM nel portale (memoria disponibile) e `free -m` sulla VM
+   per lo swap.
+3. Log dell'host: `journalctl CONTAINER_NAME=app-service --since "2 days ago"`
+   per i tempi di nginx, i 4xx/5xx e gli errori di Next.js.
+
 ---
 
 ## Repo correlate
