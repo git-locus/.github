@@ -1,6 +1,6 @@
 name: Site health 🩺
 
-# Controlla ogni 10 minuti che il sito di produzione risponda e che il
+# Controlla ogni 15 minuti che il sito di produzione risponda e che il
 # certificato TLS non sia vicino alla scadenza. Se qualcosa non va il job
 # fallisce e GitHub manda la notifica di workflow fallito.
 #
@@ -9,7 +9,7 @@ name: Site health 🩺
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 permissions: {}
