@@ -34,7 +34,8 @@ Questa repo è il **cuore del ciclo di vita** di Locus. Contiene:
     └── workflows/
         ├── deploy.yml      # Workflow di build e sync verso l'infra Azure
         ├── security.yml    # Controlli di sicurezza su questa repo
-        └── dast-zap.yml    # Scansione DAST (ZAP) dello stack compose
+        ├── dast-zap.yml    # Scansione DAST (ZAP) dello stack compose
+        └── site-health.yml # Controllo periodico di sito e certificato in produzione
 ```
 
 ---
@@ -262,6 +263,8 @@ Azure Monitor avvisa via email gli Owner della subscription quando la memoria
 disponibile della VM scende sotto soglia. Dettagli in `docker2azure4student/README.md`, sezione
 Observability.
 
+Il sito e il certificato sono controllati ogni 30 minuti dal workflow `site-health.yml`.
+
 Dove guardare per primo in caso di lentezza:
 
 1. Log Analytics, tabella `AppRequests`: durata e fallimenti delle richieste
@@ -342,6 +345,7 @@ Dove guardare per primo in caso di lentezza:
 |---|---|---|
 | `security.yml` | PR su `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL/HIGH/MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history con allowlist) |
 | `dast-zap.yml` | weekly cron, PR (su modifiche al `Dockerfile`), `workflow_dispatch` | Avvia lo stack docker compose effimero ed esegue ZAP baseline contro `http://localhost:8080` |
+| `site-health.yml` | cron ogni 30 minuti, `workflow_dispatch` | Verifica che `https://$DOMAIN/landing` risponda 200 e che il certificato TLS abbia almeno 14 giorni di validita'. Se fallisce, GitHub notifica il workflow fallito. Dura pochi secondi e la repo e' pubblica, quindi non consuma minuti a pagamento. Sostituisce un test di disponibilita' Azure, a pagamento per esecuzione. |
 
 Le repo `api` e `client` hanno workflow `security.yml` analoghi (bandit, semgrep,
 pip-audit / npm-audit, codeql, trivy-fs, gitleaks). Tutte le action usate sono

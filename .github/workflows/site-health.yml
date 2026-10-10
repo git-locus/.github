@@ -1,0 +1,56 @@
+name: Site health 🩺
+
+# Controlla ogni 30 minuti che il sito di produzione risponda e che il
+# certificato TLS non sia vicino alla scadenza. Se qualcosa non va il job
+# fallisce e GitHub manda la notifica di workflow fallito.
+#
+# Usa la variabile DOMAIN (Repository -> Settings -> Variables -> Actions).
+# /landing risponde 200 direttamente, senza redirect.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: site-health
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Site up and certificate valid
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DOMAIN: ${{ vars.DOMAIN }}
+      MIN_CERT_DAYS: "14"
+    steps:
+      - name: Check HTTP status
+        run: |
+          set -euo pipefail
+          if [ -z "$DOMAIN" ]; then
+            echo "::error::vars.DOMAIN non configurata"
+            exit 1
+          fi
+          url="https://${DOMAIN}/landing"
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 10 --max-time 20 \
+            --retry 2 --retry-delay 5 --retry-all-errors "$url" || true)
+          echo "GET ${url} -> ${code}"
+          if [ "$code" != "200" ]; then
+            echo "::error::${url} ha risposto ${code:-nessuna risposta} (atteso 200)"
+            exit 1
+          fi
+
+      - name: Check certificate expiry
+        run: |
+          set -euo pipefail
+          end=$(openssl s_client -connect "${DOMAIN}:443" -servername "${DOMAIN}" </dev/null 2>/dev/null \
+            | openssl x509 -noout -enddate | cut -d= -f2)
+          days=$(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
+          echo "Certificate for ${DOMAIN} expires ${end} (${days} days left)"
+          if [ "$days" -lt "$MIN_CERT_DAYS" ]; then
+            echo "::error::Il certificato di ${DOMAIN} scade tra ${days} giorni (soglia ${MIN_CERT_DAYS})"
+            exit 1
+          fi
