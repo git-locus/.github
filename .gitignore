@@ -16,7 +16,7 @@ Thumbs.db
 .cache/
 .local/
 
-# Bozze locali di issue / note temporanee — non vanno committate.
-# Usa il file solo come scratchpad e poi pubblicalo come issue su GitHub.
+# Local issue drafts and temporary notes: they must not be committed.
+# Use the folder only as a scratchpad, then publish the text as a GitHub issue.
 issues/
 

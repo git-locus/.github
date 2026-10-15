@@ -1,8 +1,8 @@
 #!/bin/sh
 # Eseguito come CMD del container:
-# 1. Genera nginx.conf dal template (sostituisce ${DOMAIN})
-# 2. Acquisisce il certificato Let's Encrypt (o self-signed come fallback)
-# 3. Avvia supervisord (api, client, nginx, certbot-renew)
+# 1. Generate nginx.conf from the template (substitutes ${DOMAIN})
+# 2. Get the Let's Encrypt certificate (or a self-signed one as a fallback)
+# 3. Start supervisord (api, client, nginx, certbot-renew)
 set -eu
 
 DOMAIN="${DOMAIN:?DOMAIN env var mancante}"
@@ -10,17 +10,17 @@ EMAIL="${LETS_ENCRYPT_EMAIL:?LETS_ENCRYPT_EMAIL env var mancante}"
 CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
 WEBROOT="/var/www/certbot"
 
-# 1. Genera nginx.conf dal template (solo ${DOMAIN} viene sostituito,
-#    le variabili nginx come $host $request_uri rimangono intatte)
+# 1. Generate nginx.conf from the template (only ${DOMAIN} is substituted,
+#    nginx variables such as $host $request_uri stay intact)
 envsubst '${DOMAIN}' < /etc/nginx/nginx.template.conf > /etc/nginx/nginx.conf
-echo "[init-https] nginx.conf generato per dominio: $DOMAIN"
+echo "[init-https] nginx.conf generated for domain: $DOMAIN"
 
-# 2. Acquisisce il certificato se non esiste già
+# 2. Get the certificate if it does not exist yet
 if [ ! -f "$CERT_DIR/fullchain.pem" ]; then
-    echo "[init-https] Nessun certificato trovato, richiedo a Let's Encrypt..."
+    echo "[init-https] No certificate found, requesting one from Let's Encrypt..."
     mkdir -p "$WEBROOT"
 
-    # Avvia nginx temporaneo in HTTP-only per rispondere alla ACME challenge
+    # Start a temporary HTTP-only nginx to answer the ACME challenge
     nginx -c /etc/nginx/nginx-acme.conf
     sleep 1
 
@@ -30,9 +30,9 @@ if [ ! -f "$CERT_DIR/fullchain.pem" ]; then
         -d "www.$DOMAIN" \
         --email "$EMAIL" \
         --agree-tos --non-interactive; then
-        echo "[init-https] Certificato Let's Encrypt ottenuto con successo"
+        echo "[init-https] Let's Encrypt certificate obtained successfully"
     else
-        echo "[init-https] WARNING: Let's Encrypt fallito, genero certificato self-signed"
+        echo "[init-https] WARNING: Let's Encrypt failed, generating a self-signed certificate"
         mkdir -p "$CERT_DIR"
         openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
             -keyout "$CERT_DIR/privkey.pem" \
@@ -46,8 +46,8 @@ if [ ! -f "$CERT_DIR/fullchain.pem" ]; then
     nginx -s quit 2>/dev/null || true
     sleep 1
 else
-    echo "[init-https] Certificato già presente per $DOMAIN"
+    echo "[init-https] Certificate already present for $DOMAIN"
 fi
 
-# 3. Avvia supervisor (gestisce api, client, nginx con HTTPS, certbot-renew)
+# 3. Start supervisor (manages api, client, nginx with HTTPS, certbot-renew)
 exec /usr/bin/supervisord -c /etc/supervisord.conf

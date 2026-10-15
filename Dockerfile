@@ -1,26 +1,26 @@
 # =============================================================================
 # Locus – Fullstack Docker image
 #
-# Struttura del build (multi-stage):
+# Build structure (multi-stage):
 #
-#   client-deps    → installa npm deps
-#   client-builder → compila Next.js (standalone)
-#   api-builder    → installa dipendenze Python con uv
-#   final          → immagine runtime: nginx + supervisor + Next.js + Django
+#   client-deps    → installs the npm deps
+#   client-builder → builds Next.js (standalone)
+#   api-builder    → installs the Python dependencies with uv
+#   final          → runtime image: nginx + supervisor + Next.js + Django
 #
-# L'immagine finale espone:
-#   :8080  → nginx (reverse proxy pubblico, HTTP)
-#   nginx instrada /api/* → gunicorn (interno :8000)
-#            tutto il resto → Next.js standalone (interno :3000)
+# The final image exposes:
+#   :8080  → nginx (public reverse proxy, HTTP)
+#   nginx routes /api/* → gunicorn (internal :8000)
+#            everything else → standalone Next.js (internal :3000)
 #
-# Build dal contesto della repo .github (dove si trova questo file):
+# Build from the context of the .github repository (where this file is):
 #   docker build \
 #     --build-arg CLIENT_DIR=../client \
 #     --build-arg API_DIR=../api \
 #     -t locus:latest .
 #
-# In CI il workflow copia client/ e api/ al suo fianco prima del build,
-# quindi il contesto è la cartella sync-bundle/ e i path sono relativi.
+# In CI the workflow copies client/ and api/ next to it before the build,
+# so the context is the sync-bundle/ folder and the paths are relative.
 # =============================================================================
 
 ARG PYTHON_VERSION=3.12.2
@@ -41,7 +41,7 @@ COPY client/package.json client/package-lock.json ./
 RUN npm ci
 
 # -----------------------------------------------------------------------------
-# Stage 2 – Client: compila Next.js in modalità standalone
+# Stage 2 – Client: build Next.js in standalone mode
 # -----------------------------------------------------------------------------
 FROM node:${NODE_VERSION}-alpine AS client-builder
 WORKDIR /client
@@ -78,10 +78,10 @@ RUN apk add --no-cache \
     && pip install --no-cache-dir certbot \
     && rm -rf /var/cache/apk/*
 
-# --- Utenti non-root per Next.js, Django e oauth2-proxy ---
-# nginx, supervisord e certbot continuano a girare come root (richiesto per
-# legare porte privilegiate, scrivere /etc/letsencrypt, ecc.). Solo i
-# processi applicativi droppano privilegi.
+# --- Unprivileged users for Next.js, Django and oauth2-proxy ---
+# nginx, supervisord and certbot keep running as root (needed to bind
+# privileged ports, write /etc/letsencrypt, and so on). Only the application
+# processes drop privileges.
 RUN addgroup -S nodejs && adduser -S -G nodejs nextjs \
     && addgroup -S django && adduser -S -G django django \
     && addgroup -S oauth2proxy && adduser -S -G oauth2proxy oauth2proxy

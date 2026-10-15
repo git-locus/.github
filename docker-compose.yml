@@ -1,6 +1,6 @@
 # Docker Compose per sviluppo locale di Locus.
 #
-# NON usa Dockerfile né immagini custom: solo immagini base + sorgente montato.
+# It uses no Dockerfile and no custom images: only base images plus the mounted source.
 # Le dipendenze vengono cachate in volumi dedicati e saltate ai restart successivi.
 #
 # Utilizzo:
@@ -10,9 +10,9 @@
 # Variabili d'ambiente:
 #   Crea un file .env a partire da .env.example prima di avviare.
 
-# Project name esplicito: senza questo i container prenderebbero il nome
-# della cartella (".github" → "github_*"), invisibili come "locus" in
-# Podman Desktop / Docker Desktop.
+# Explicit project name: without it the containers would take the name of the
+# folder (".github" → "github_*"), invisible as "locus" in Podman Desktop /
+# Docker Desktop.
 name: locus
 
 services:
@@ -23,13 +23,13 @@ services:
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
     restart: unless-stopped
-    # --skipApiVersionCheck: l'SDK azure-storage-blob più recente usa una API
-    # version che Azurite stable non riconosce. Azurite la gestisce comunque.
+    # --skipApiVersionCheck: the newest azure-storage-blob SDK uses an API
+    # version that stable Azurite does not recognise. Azurite handles it anyway.
     command: azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck
     ports:
-      # Esposto sull'host solo per debug (Storage Explorer / curl). Il
-      # browser non lo usa più: i media sono reverse-proxied dall'API
-      # via /api/media/*.
+      # Exposed on the host only for debugging (Storage Explorer / curl). The
+      # browser no longer uses it: media is reverse-proxied by the API
+      # through /api/media/*.
       - "10000:10000"
     volumes:
       - azurite_data:/data
@@ -40,9 +40,9 @@ services:
       retries: 10
 
   # ---------------------------------------------------------------------------
-  # API Django – settings_dev (SQLite, DEBUG=True), sorgente montato.
-  # Hot reload attivo. Venv montata in /opt/venv (fuori da /app) così il
-  # reloader non scansiona il volume, compatibile con Podman rootless.
+  # Django API – settings_dev (SQLite, DEBUG=True), source mounted.
+  # Hot reload is on. The venv is mounted at /opt/venv (outside /app) so the
+  # reloader does not scan the volume, which is compatible with rootless Podman.
   # ---------------------------------------------------------------------------
   api:
     # Immagine ufficiale uv+python: niente curl|sh da internet, build deterministica.
@@ -54,26 +54,26 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     volumes:
-      # Sorgente live: ogni modifica al codice è subito visibile
+      # Live source: every code change is visible right away
       - ../api/src:/app:z
-      # Venv fuori da /app così il reloader Django non scansiona il volume
-      # (evita errori permessi su Podman rootless)
+      # Venv outside /app so the Django reloader does not scan the volume
+      # (avoids permission errors on rootless Podman)
       - api_venv:/opt/venv
       # File statici condivisi con nginx
       - static_files:/static
     environment:
       DJANGO_SETTINGS_MODULE: api.settings_dev
-      # Hostname interno per parlare con Azurite. Il browser non raggiunge
-      # mai Azurite direttamente: i media privati sono serviti via
-      # `apps.media.views` su /api/media/*.
+      # Internal hostname to reach Azurite. The browser never reaches Azurite
+      # directly: private media is served through
+      # `apps.media.views` at /api/media/*.
       AZURITE_HOST: "azurite:10000"
-      # ACS (email) non è usato in dev locale; placeholder per import.
+      # ACS (e-mail) is not used in local development; placeholder for imports.
       ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING:-endpoint=https://fake.communication.azure.com/;accesskey=fake}
       PATH: /opt/venv/bin:/usr/local/bin:/usr/bin:/bin
       VIRTUAL_ENV: /opt/venv
       UV_PROJECT_ENVIRONMENT: /opt/venv
       UV_LINK_MODE: copy
-    # Bootstrap: sync deps (uv già nell'immagine), init blob, migrate, runserver.
+    # Bootstrap: sync deps (uv is already in the image), init blob, migrate, runserver.
     command: >
       sh -c "
         uv sync --frozen &&
@@ -115,13 +115,12 @@ services:
     environment:
       NODE_ENV: development
       NEXT_PUBLIC_API_URL: http://localhost:8080/api
-    # Installa dipendenze (salta se già presenti) poi avvia dev server
+    # Install dependencies (skipped if already present), then start the dev server
     command: sh -c "npm install && npm run dev"
     healthcheck:
-      # start_period generoso: "npm install" a freddo (volume node_modules
-      # vuoto) puo' richiedere 2-3 minuti prima che "next dev" sia in
-      # ascolto; con una finestra piu' stretta il container viene marcato
-      # unhealthy prima ancora che il dev server risponda.
+      # Generous start_period: a cold "npm install" (empty node_modules volume)
+      # can take 2-3 minutes before "next dev" is listening; with a tighter
+      # window the container is marked unhealthy before the dev server answers.
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
       interval: 10s
       timeout: 5s
