@@ -69,8 +69,8 @@ jobs:
       # ----------------------------------------------------------------
       # Fallback: checkout repos + compose stack (only if needed)
       # ----------------------------------------------------------------
-      # Token installazione short-lived della GitHub App (vedi deploy.yml),
-      # riusato qui solo in lettura, e solo se serve davvero il fallback.
+      # Short-lived installation token of the GitHub App (see deploy.yml),
+      # reused here read-only, and only if the fallback is really needed.
       - name: Generate GitHub App token
         id: app-token
         if: steps.probe.outputs.target == 'local'
@@ -131,7 +131,7 @@ jobs:
           exit 1
 
       # ----------------------------------------------------------------
-      # Imposta l'URL di scansione definitivo
+      # Set the final scan URL
       # ----------------------------------------------------------------
       - name: Set scan target
         id: target

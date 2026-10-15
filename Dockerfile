@@ -51,7 +51,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # -----------------------------------------------------------------------------
-# Stage 3 – API: installa dipendenze Python con uv
+# Stage 3 – API: install the Python dependencies with uv
 # -----------------------------------------------------------------------------
 FROM python:${PYTHON_VERSION}-alpine AS api-builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -63,7 +63,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 # -----------------------------------------------------------------------------
-# Stage 4 – Runtime finale
+# Stage 4 – Final runtime
 # -----------------------------------------------------------------------------
 FROM python:${PYTHON_VERSION}-alpine AS final
 
@@ -86,9 +86,9 @@ RUN addgroup -S nodejs && adduser -S -G nodejs nextjs \
     && addgroup -S django && adduser -S -G django django \
     && addgroup -S oauth2proxy && adduser -S -G oauth2proxy oauth2proxy
 
-# ---- oauth2-proxy: gate su /admin (vedi nginx.fullstack.conf) ----
-# Binario ufficiale scaricato e verificato via checksum pubblicato, non
-# un'immagine Docker esterna: resta un unico livello di build riproducibile.
+# ---- oauth2-proxy: gate on /admin (see nginx.fullstack.conf) ----
+# Official binary downloaded and verified against the published checksum, not
+# an external Docker image: it stays a single reproducible build layer.
 SHELL ["/bin/ash", "-o", "pipefail", "-c"]
 ARG OAUTH2_PROXY_VERSION=7.15.4
 ARG TARGETARCH
@@ -139,9 +139,9 @@ COPY .github/supervisord.conf /etc/supervisord.conf
 COPY .github/scripts/init-https.sh /usr/local/bin/init-https.sh
 RUN chmod +x /usr/local/bin/init-https.sh
 
-# ---- Static files (condivisi tra Django e nginx) ----
-# Owned dall'utente django: collectstatic gira come django e deve scrivere qui.
-# nginx legge come root (drop privileges interno via worker_processes).
+# ---- Static files (shared between Django and nginx) ----
+# Owned by the django user: collectstatic runs as django and must write here.
+# nginx reads as root (internal privilege drop through worker_processes).
 RUN mkdir -p /static && chown -R django:django /static
 
 EXPOSE 8080 8081

@@ -2,8 +2,8 @@
 # https://github.com/hadolint/hadolint#configure
 ignored:
   # DL3018 – "Pin versions in apk add"
-  # I pacchetti Alpine di sistema (nginx, nodejs, curl, ecc.) devono seguire
-  # l'immagine base; pinnare le versioni causa rotture ad ogni bump dell'immagine.
+  # The system Alpine packages (nginx, nodejs, curl, etc.) must follow the
+  # base image; pinning the versions causes breakage on every image bump.
   - DL3018
 
   # DL3013 – "Pin versions in pip"

@@ -1,14 +1,14 @@
-# Docker Compose per sviluppo locale di Locus.
+# Docker Compose for local Locus development.
 #
 # It uses no Dockerfile and no custom images: only base images plus the mounted source.
-# Le dipendenze vengono cachate in volumi dedicati e saltate ai restart successivi.
+# Dependencies are cached in dedicated volumes and skipped on later restarts.
 #
-# Utilizzo:
+# Usage:
 #   podman compose up
-#   (oppure docker compose up se si preferisce Docker)
+#   (or docker compose up if you prefer Docker)
 #
-# Variabili d'ambiente:
-#   Crea un file .env a partire da .env.example prima di avviare.
+# Environment variables:
+#   Create a .env file from app.env.example before starting.
 
 # Explicit project name: without it the containers would take the name of the
 # folder (".github" → "github_*"), invisible as "locus" in Podman Desktop /
@@ -48,8 +48,8 @@ services:
     # Immagine ufficiale uv+python: niente curl|sh da internet, build deterministica.
     image: ghcr.io/astral-sh/uv:python3.12-alpine
     working_dir: /app
-    # DNS espliciti: i container rootless di Podman a volte non ereditano i
-    # resolver host (systemd-resolved). Senza questi `uv sync` fallisce su pypi.
+    # Explicit DNS: rootless Podman containers sometimes do not inherit the
+    # host resolvers (systemd-resolved). Without these, `uv sync` fails on pypi.
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -59,7 +59,7 @@ services:
       # Venv outside /app so the Django reloader does not scan the volume
       # (avoids permission errors on rootless Podman)
       - api_venv:/opt/venv
-      # File statici condivisi con nginx
+      # Static files shared with nginx
       - static_files:/static
     environment:
       DJANGO_SETTINGS_MODULE: api.settings_dev
@@ -110,7 +110,7 @@ services:
     volumes:
       # Sorgente live
       - ../client:/app:z
-      # node_modules in volume separato: non sovrascritto dal mount host
+      # node_modules in a separate volume: not overwritten by the host mount
       - client_node_modules:/app/node_modules
     environment:
       NODE_ENV: development
