@@ -1,0 +1,18 @@
+# Owners are requested for review automatically. Their approval is not
+# required to merge. The last matching pattern wins.
+
+# Workflows, image, proxy and deploy files
+/.github/workflows/ @morph-eos
+/Dockerfile @morph-eos
+/docker-compose.yml @morph-eos
+/supervisord.conf @morph-eos
+/nginx/ @morph-eos
+/scripts/ @morph-eos
+
+# Organization-level documents and templates
+/CONTRIBUTING.md @riccardomariamancini
+/SECURITY.md @riccardomariamancini
+/CODE_OF_CONDUCT.md @riccardomariamancini
+/profile/ @riccardomariamancini
+/.github/PULL_REQUEST_TEMPLATE.md @riccardomariamancini
+/.github/ISSUE_TEMPLATE/ @riccardomariamancini
