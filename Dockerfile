@@ -27,7 +27,7 @@ ARG PYTHON_VERSION=3.12.2
 ARG NODE_VERSION=20
 
 # -----------------------------------------------------------------------------
-# Stage 1 – Client: installa dipendenze npm
+# Stage 1 – Client: install the npm dependencies
 # -----------------------------------------------------------------------------
 FROM node:${NODE_VERSION}-alpine AS client-deps
 # npm 10.x (bundled with node:20) has a real Arborist bug resolving
@@ -67,7 +67,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # -----------------------------------------------------------------------------
 FROM python:${PYTHON_VERSION}-alpine AS final
 
-# --- Sistema base ---
+# --- Base system ---
 RUN apk add --no-cache \
         nginx \
         nodejs \

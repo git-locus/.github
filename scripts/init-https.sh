@@ -5,8 +5,8 @@
 # 3. Start supervisord (api, client, nginx, certbot-renew)
 set -eu
 
-DOMAIN="${DOMAIN:?DOMAIN env var mancante}"
-EMAIL="${LETS_ENCRYPT_EMAIL:?LETS_ENCRYPT_EMAIL env var mancante}"
+DOMAIN="${DOMAIN:?DOMAIN env var is missing}"
+EMAIL="${LETS_ENCRYPT_EMAIL:?LETS_ENCRYPT_EMAIL env var is missing}"
 CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
 WEBROOT="/var/www/certbot"
 

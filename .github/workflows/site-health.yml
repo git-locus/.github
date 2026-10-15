@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$DOMAIN" ]; then
-            echo "::error::vars.DOMAIN non configurata"
+            echo "::error::vars.DOMAIN is not configured"
             exit 1
           fi
           url="https://${DOMAIN}/landing"

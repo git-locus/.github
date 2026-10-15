@@ -51,7 +51,7 @@ jobs:
           DOMAIN: ${{ vars.DOMAIN }}
         run: |
           if [ -z "$DOMAIN" ]; then
-            echo "::warning::vars.DOMAIN non configurata – fallback a stack locale"
+            echo "::warning::vars.DOMAIN is not configured – falling back to the local stack"
             echo "target=local" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -62,7 +62,7 @@ jobs:
             echo "target=prod" >> "$GITHUB_OUTPUT"
             echo "url=${PROD_URL}" >> "$GITHUB_OUTPUT"
           else
-            echo "::error::Produzione ${PROD_URL} non raggiungibile – fallback a stack locale"
+            echo "::error::Production ${PROD_URL} is not reachable – falling back to the local stack"
             echo "target=local" >> "$GITHUB_OUTPUT"
           fi
 

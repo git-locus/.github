@@ -45,7 +45,7 @@ services:
   # reloader does not scan the volume, which is compatible with rootless Podman.
   # ---------------------------------------------------------------------------
   api:
-    # Immagine ufficiale uv+python: niente curl|sh da internet, build deterministica.
+    # Official uv+python image: no curl|sh from the internet, deterministic build.
     image: ghcr.io/astral-sh/uv:python3.12-alpine
     working_dir: /app
     # Explicit DNS: rootless Podman containers sometimes do not inherit the
@@ -94,7 +94,7 @@ services:
       start_period: 90s
 
   # ---------------------------------------------------------------------------
-  # Client Next.js – nessuna build, sorgente montato, npm run dev con hot-reload
+  # Next.js client – no build, source mounted, npm run dev with hot reload
   # ---------------------------------------------------------------------------
   client:
     # Matches client/.github/workflows/test.yml's actions/setup-node
@@ -108,7 +108,7 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     volumes:
-      # Sorgente live
+      # Live source
       - ../client:/app:z
       # node_modules in a separate volume: not overwritten by the host mount
       - client_node_modules:/app/node_modules
