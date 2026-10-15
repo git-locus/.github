@@ -212,7 +212,7 @@ jobs:
           cp manifest.json sync-bundle/manifest.json
 
       # ------------------------------------------------------------------
-      # 6. Push del bundle su un branch sync/* di docker2azure4student
+      # 6. Push the bundle to a sync/* branch of docker2azure4student
       # ------------------------------------------------------------------
       - name: Push sync bundle to infra repo
         env:
