@@ -254,13 +254,7 @@ Where to look first when something is slow:
 
 ## Related repositories
 
-| Repository | Role |
-|---|---|
-| `git-locus/api` | Django backend |
-| `git-locus/client` | Next.js frontend |
-| `git-locus/.github` (this one) | Build and deploy orchestration |
-| `git-locus/docker2azure4student` | Azure infrastructure, receives the sync bundle and deploys |
-| `git-locus/knowledge` | Documentation and operating guides |
+The repositories of the project, and what each one does, are listed in [CONTRIBUTING.md](CONTRIBUTING.md). This one orchestrates the build and the deploy, and hands the image to `docker2azure4student`, which deploys it on Azure.
 
 ---
 
