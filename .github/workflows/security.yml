@@ -107,9 +107,9 @@ jobs:
       - name: Run actionlint
         run: ./actionlint -color
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
-        if: always()  # gira anche se actionlint ha trovato issue
+        if: always()  # runs even if actionlint found issues
       - name: zizmor
-        if: always()  # gira anche se actionlint ha trovato issue
+        if: always()  # runs even if actionlint found issues
         shell: bash
         run: |
           set +e
@@ -122,7 +122,7 @@ jobs:
           if [ -s zizmor.sarif.tmp ]; then
             mv zizmor.sarif.tmp zizmor.sarif
           else
-            echo "::warning::zizmor non ha prodotto SARIF (rc=$rc). Stderr:"
+            echo "::warning::zizmor did not produce SARIF (rc=$rc). Stderr:"
             cat zizmor.err || true
           fi
           exit $rc

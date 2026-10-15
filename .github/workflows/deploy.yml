@@ -37,7 +37,7 @@ on:
   workflow_dispatch:
     inputs:
       source_repo:
-        description: 'Repo sorgente (api | client | manual)'
+        description: 'Source repository (api | client | manual)'
         type: string
         required: false
         default: 'manual'
@@ -175,7 +175,7 @@ jobs:
           echo "image_uri=$FULL_URI" >> "$GITHUB_OUTPUT"
 
       # ------------------------------------------------------------------
-      # 4. Compila il manifest.json
+      # 4. Build the manifest.json
       # ------------------------------------------------------------------
       - name: Build manifest
         id: manifest
