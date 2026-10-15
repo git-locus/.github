@@ -39,7 +39,7 @@ The app is then served at `http://localhost:8080`. The `api` and `client` folder
 1. Create a branch from `dev` named `<type>/<short-description>`, where type is `feature`, `fix`, `chore` or `docs`.
 2. Make your change, with tests and documentation (see below).
 3. Open a pull request against `dev`. Describe what changed and why, and link the issue.
-4. Wait for the checks and for a review. Pull requests from forks need a maintainer to approve the workflow run.
+4. Wait for the checks and for a review. The owners listed in each repository's `CODEOWNERS` are asked for review automatically, but their approval is not required to merge. Pull requests from forks need a maintainer to approve the workflow run.
 5. Maintainers promote `dev` to `main` with a separate pull request and a plain merge commit. A merge to `main` of `api` or `client` deploys to production, so contributors never target `main` directly.
 
 Commit messages follow the conventional style already used in the history, for example `feat(post): report an idea` or `fix(auth): refresh token on 401`.
