@@ -4,8 +4,8 @@ name: Security 🛡️
 # supervisord, scripts, workflow di deploy). Focus: container, IaC, workflow.
 
 on:
-  # Solo pull_request per evitare duplicazione con il run di push.
-  # Schedule weekly + workflow_dispatch garantiscono coverage post-merge.
+  # Only pull_request, to avoid duplicating the push run.
+  # Weekly schedule and workflow_dispatch keep the post-merge coverage.
   pull_request:
     branches: [main]
   schedule:
@@ -113,8 +113,8 @@ jobs:
         shell: bash
         run: |
           set +e
-          # Pre-crea uno stub SARIF: se uvx fallisce o non scrive nulla, upload-sarif
-          # avrà comunque un file valido da consumare.
+          # Pre-create a stub SARIF file: if uvx fails or writes nothing, upload-sarif
+          # still has a valid file to consume.
           # shellcheck disable=SC2016  # $schema is literal JSON, not a shell variable
           printf '%s\n' '{"version":"2.1.0","$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"zizmor"}},"results":[]}]}' > zizmor.sarif
           uvx zizmor==1.5.2 --no-progress --format sarif .github/workflows > zizmor.sarif.tmp 2>zizmor.err

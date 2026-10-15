@@ -1,19 +1,19 @@
 name: DAST – ZAP Baseline 🌐
 
-# Passive baseline scan con OWASP ZAP.
+# Passive baseline scan with OWASP ZAP.
 #
-# Strategia:
-#   1. Prova a scansionare il sito di produzione (https://$DOMAIN).
-#   2. Se la produzione non è raggiungibile, fa fallback sullo stack
-#      Docker Compose locale (dev); il job emette comunque un errore
-#      per segnalare che la scansione non ha coperto la configurazione reale.
+# Strategy:
+#   1. Try to scan the production site (https://$DOMAIN).
+#   2. If production is not reachable, fall back to the local Docker Compose
+#      stack (dev); the job still raises an error to signal that the scan did
+#      not cover the real configuration.
 #
-# La variabile DOMAIN deve essere configurata in:
-#   Repository → Settings → Variables → Actions  (es. "locus.now")
+# The DOMAIN variable must be configured in:
+#   Repository → Settings → Variables → Actions  (for example "locus.now")
 
 on:
   schedule:
-    - cron: "0 2 * * 1"   # lunedì 02:00 UTC (weekly)
+    - cron: "0 2 * * 1"   # Monday 02:00 UTC (weekly)
   workflow_dispatch:
   pull_request:
     paths:
@@ -67,7 +67,7 @@ jobs:
           fi
 
       # ----------------------------------------------------------------
-      # Fallback: checkout repos + compose stack (solo se serve)
+      # Fallback: checkout repos + compose stack (only if needed)
       # ----------------------------------------------------------------
       # Token installazione short-lived della GitHub App (vedi deploy.yml),
       # riusato qui solo in lettura, e solo se serve davvero il fallback.

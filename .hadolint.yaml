@@ -7,6 +7,6 @@ ignored:
   - DL3018
 
   # DL3013 – "Pin versions in pip"
-  # certbot è l'unico pacchetto pip nel runtime stage; la versione è implicitamente
-  # pinnata dall'immagine base Python e la build è deterministica via lockfile.
+  # certbot is the only pip package in the runtime stage; its version is implicitly
+  # pinned by the Python base image and the build is deterministic through the lockfile.
   - DL3013

@@ -1,11 +1,11 @@
 name: Site health 🩺
 
-# Controlla ogni ora (al minuto 7) che il sito di produzione risponda e che il
-# certificato TLS non sia vicino alla scadenza. Se qualcosa non va il job
-# fallisce e GitHub manda la notifica di workflow fallito.
+# Every hour (at minute 7) checks that the production site answers and that the
+# TLS certificate is not close to expiry. If something is wrong the job fails
+# and GitHub sends the failed workflow notification.
 #
-# Usa la variabile DOMAIN (Repository -> Settings -> Variables -> Actions).
-# /landing risponde 200 direttamente, senza redirect.
+# Uses the DOMAIN variable (Repository -> Settings -> Variables -> Actions).
+# /landing answers 200 directly, without redirects.
 
 on:
   schedule:
@@ -39,7 +39,7 @@ jobs:
             --retry 2 --retry-delay 5 --retry-all-errors "$url" || true)
           echo "GET ${url} -> ${code}"
           if [ "$code" != "200" ]; then
-            echo "::error::${url} ha risposto ${code:-nessuna risposta} (atteso 200)"
+            echo "::error::${url} answered ${code:-no response} (expected 200)"
             exit 1
           fi
 
@@ -51,6 +51,6 @@ jobs:
           days=$(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
           echo "Certificate for ${DOMAIN} expires ${end} (${days} days left)"
           if [ "$days" -lt "$MIN_CERT_DAYS" ]; then
-            echo "::error::Il certificato di ${DOMAIN} scade tra ${days} giorni (soglia ${MIN_CERT_DAYS})"
+            echo "::error::The certificate of ${DOMAIN} expires in ${days} days (threshold ${MIN_CERT_DAYS})"
             exit 1
           fi

@@ -1,32 +1,33 @@
 # Workflow A – Locus deploy pipeline
 #
-# Costruisce l'immagine fullstack, crea il sync-bundle e lo pusha
-# nel branch sync/<run-id>-<sha> di docker2azure4student.
-# Il Workflow B di quella repo intercetta il push e deploy su Azure.
+# Builds the fullstack image, creates the sync bundle and pushes it to the
+# sync/<run-id>-<sha> branch of docker2azure4student.
+# Workflow B of that repository picks up the push and deploys to Azure.
 #
-# Trigger:
-#   - repository_dispatch → chiamato da api e client su push main
-#   - workflow_dispatch   → deploy manuale dalla GitHub UI
+# Triggers:
+#   - repository_dispatch → called by api and client on a push to main
+#   - workflow_dispatch   → manual deploy from the GitHub UI
 #
-# Secret e variabili: tutti in QUESTA repo (.github) → Settings → Secrets / Variables
+# Secrets and variables: all in THIS repository (.github) → Settings → Secrets / Variables
 #
 #   Secrets:
-#     APP_CLIENT_ID                Client ID della GitHub App "locus-deploy-bot" (o
-#                                  simile), installata su api, client,
-#                                  docker2azure4student con permesso Contents: Read
-#                                  and write. Sostituisce INFRA_REPO_PAT: il token
-#                                  generato è auto-scoped ai soli repo su cui la App
-#                                  è installata e scade dopo 1 ora, non è legato a un
-#                                  account personale. Settings della App → "Client ID"
-#                                  (non l'App ID numerico, deprecato per questo uso).
-#     APP_PRIVATE_KEY              Chiave privata (.pem) della stessa GitHub App.
-#     CONTAINER_REGISTRY_PASSWORD Token/password per il container registry
+#     APP_CLIENT_ID                Client ID of the "locus-deploy-bot" GitHub App (or
+#                                  similar), installed on api, client,
+#                                  docker2azure4student with Contents: Read and
+#                                  write permission. It replaces INFRA_REPO_PAT: the
+#                                  generated token is auto-scoped to the repositories
+#                                  the App is installed on and expires after 1 hour,
+#                                  and is not tied to a personal account. App settings
+#                                  → "Client ID" (not the numeric App ID, deprecated
+#                                  for this use).
+#     APP_PRIVATE_KEY              Private key (.pem) of the same GitHub App.
+#     CONTAINER_REGISTRY_PASSWORD Token or password for the container registry
 #
 #   Variables (Settings → Variables → Actions):
-#     REGISTRY_LOGIN_SERVER       es. ghcr.io
-#     IMAGE_REGISTRY              es. ghcr.io/git-locus
-#     IMAGE_NAME                  es. locus
-#     CONTAINER_REGISTRY_USERNAME Username del registry
+#     REGISTRY_LOGIN_SERVER       for example ghcr.io
+#     IMAGE_REGISTRY              for example ghcr.io/git-locus
+#     IMAGE_NAME                  for example locus
+#     CONTAINER_REGISTRY_USERNAME Registry username
 
 name: Build & sync to Azure infra
 
@@ -40,10 +41,10 @@ on:
         type: string
         required: false
         default: 'manual'
-  # Push su main della repo .github: il workflow parte SOLO se vengono toccati
-  # file che impattano l'immagine fullstack o il workflow stesso. Modifiche a
-  # README, knowledge, agents, instructions, ecc. NON triggerano deploy.
-  # paths: si applica solo al trigger push, non a repository_dispatch.
+  # Push to main of the .github repository: the workflow starts ONLY if files that
+  # affect the fullstack image or the workflow itself are touched. Changes to
+  # README, knowledge, agents, instructions and so on do NOT trigger a deploy.
+  # paths: applies only to the push trigger, not to repository_dispatch.
   push:
     branches:
       - main
@@ -98,8 +99,8 @@ jobs:
           persist-credentials: false
           path: dot-github
 
-      # Token installazione short-lived (scade dopo 1h) della GitHub App,
-      # auto-scoped ai soli repo elencati sotto. Sostituisce INFRA_REPO_PAT.
+      # Short-lived installation token (expires after 1h) of the GitHub App,
+      # auto-scoped to the repositories listed below. It replaces INFRA_REPO_PAT.
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
@@ -111,8 +112,8 @@ jobs:
             api
             client
             docker2azure4student
-          # Cap esplicito del token a questo solo permesso, anche se in futuro
-          # la App venisse installata con permessi più ampi (zizmor: github-app).
+          # Explicitly cap the token to this single permission, even if the App is
+          # installed with broader permissions in the future (zizmor: github-app).
           permission-contents: write
 
       # Checkout separato di api e client (sono repo indipendenti)
@@ -144,11 +145,11 @@ jobs:
           cp -r client      build-context/client
 
       # ------------------------------------------------------------------
-      # 3. Build e push dell'immagine fullstack
+      # 3. Build and push the fullstack image
       # ------------------------------------------------------------------
-      # I secret sono passati come env var (non interpolati inline) per
-      # evitare leak in caso di tracing/`set -x`. GitHub maschera comunque
-      # i valori, ma il pattern `env:` è la prassi raccomandata.
+      # Secrets are passed as env vars (not interpolated inline) to avoid leaks
+      # with tracing or `set -x`. GitHub masks the values anyway, but the `env:`
+      # pattern is the recommended practice.
       - name: Docker login
         env:
           REGISTRY_PASSWORD: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
@@ -194,7 +195,7 @@ jobs:
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
 
       # ------------------------------------------------------------------
-      # 5. Crea il sync-bundle con Dockerfile + manifest
+      # 5. Create the sync bundle with the Dockerfile and manifest
       # ------------------------------------------------------------------
       - name: Assemble sync-bundle
         env:
@@ -202,8 +203,8 @@ jobs:
         run: |
           mkdir -p sync-bundle
 
-          # Il Dockerfile nel bundle fa solo pull dell'immagine già builddata:
-          # la build vera è già avvenuta nel passo precedente.
+          # The Dockerfile in the bundle only pulls the already built image:
+          # the real build already happened in the previous step.
           cat > sync-bundle/Dockerfile <<EOF
           FROM ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}:${IMAGE_TAG}
           EOF
@@ -231,7 +232,7 @@ jobs:
           cd infra-repo
           git checkout -b "$BRANCH"
 
-          # Copia il bundle (sovrascrive se esistente da run precedenti)
+          # Copy the bundle (overwrites it if it exists from previous runs)
           cp -r ../sync-bundle ./sync-bundle
 
           git config user.email "github-actions[bot]@users.noreply.github.com"
