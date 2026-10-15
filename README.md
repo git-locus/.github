@@ -25,12 +25,17 @@ Questa repo è il **cuore del ciclo di vita** di Locus. Contiene:
 │   └── nginx-acme.conf         # Config nginx temporanea per ACME challenge
 ├── scripts/
 │   └── init-https.sh       # Entrypoint: genera nginx.conf, ottiene cert TLS, avvia supervisord
+├── CONTRIBUTING.md         # Come contribuire (default per tutte le repo dell'organizzazione)
+├── SECURITY.md             # Come segnalare una vulnerabilità
+├── CODE_OF_CONDUCT.md      # Codice di condotta
 ├── agents/
 │   └── locus-platform-guardian.agent.md   # Agente di sviluppo/review per tutto il workspace
 ├── profile/
 │   └── README.md           # Pagina pubblica dell'organizzazione GitHub
 └── .github/
     ├── dependabot.yml      # Aggiornamenti automatici delle dipendenze
+    ├── PULL_REQUEST_TEMPLATE.md   # Template PR (default dell'organizzazione)
+    ├── ISSUE_TEMPLATE/     # Template issue (default dell'organizzazione)
     └── workflows/
         ├── deploy.yml      # Workflow di build e sync verso l'infra Azure
         ├── security.yml    # Controlli di sicurezza su questa repo
