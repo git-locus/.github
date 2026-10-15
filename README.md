@@ -51,7 +51,7 @@ Il `Dockerfile` usa un build **multi-stage**:
 
 | Stage | Base | Scopo |
 |---|---|---|
-| `client-deps` | `node:20-alpine` | Installa le dipendenze npm |
+| `client-deps` | `node:20-alpine` | Installa le dipendenze npm con `npm ci` dal lockfile del client |
 | `client-builder` | `node:20-alpine` | Compila Next.js in modalità `standalone` |
 | `api-builder` | `python:3.12-alpine` | Installa le dipendenze Python con `uv` |
 | `final` | `python:3.12-alpine` | Immagine runtime con nginx + supervisord |
