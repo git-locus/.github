@@ -1,5 +1,5 @@
 #!/bin/sh
-# Eseguito come CMD del container:
+# Run as the CMD of the container:
 # 1. Generate nginx.conf from the template (substitutes ${DOMAIN})
 # 2. Get the Let's Encrypt certificate (or a self-signed one as a fallback)
 # 3. Start supervisord (api, client, nginx, certbot-renew)
@@ -42,7 +42,7 @@ if [ ! -f "$CERT_DIR/fullchain.pem" ]; then
         cp "$CERT_DIR/fullchain.pem" "$CERT_DIR/chain.pem"
     fi
 
-    # Ferma il nginx temporaneo
+    # Stop the temporary nginx
     nginx -s quit 2>/dev/null || true
     sleep 1
 else

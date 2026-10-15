@@ -91,7 +91,7 @@ jobs:
 
     steps:
       # ------------------------------------------------------------------
-      # 1. Checkout dell'intera repo .github con tutte le sotto-repo
+      # 1. Checkout of the whole .github repository with all the sub-repositories
       # ------------------------------------------------------------------
       - name: Checkout .github repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -116,7 +116,7 @@ jobs:
           # installed with broader permissions in the future (zizmor: github-app).
           permission-contents: write
 
-      # Checkout separato di api e client (sono repo indipendenti)
+      # Separate checkout of api and client (they are independent repositories)
       - name: Checkout api repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -134,8 +134,8 @@ jobs:
           path: client
 
       # ------------------------------------------------------------------
-      # 2. Prepara il contesto di build: metti tutto allo stesso livello
-      #    come si aspetta il Dockerfile (.github/ api/ client/)
+      # 2. Prepare the build context: put everything at the same level,
+      #    as the Dockerfile expects (.github/ api/ client/)
       # ------------------------------------------------------------------
       - name: Prepare build context
         run: |
