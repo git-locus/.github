@@ -90,6 +90,23 @@ jobs:
     if: github.event.client_payload.source_repo != 'knowledge'
 
     steps:
+      # The dispatch payload comes from other repositories (a token can send anything): only the expected shapes go on.
+      - name: Validate the dispatch payload
+        env:
+          PAYLOAD_SOURCE_REPO: ${{ github.event.client_payload.source_repo }}
+          PAYLOAD_SOURCE_SHA: ${{ github.event.client_payload.source_sha }}
+          INPUT_SOURCE_REPO: ${{ inputs.source_repo }}
+        run: |
+          repo="${PAYLOAD_SOURCE_REPO:-${INPUT_SOURCE_REPO:-manual}}"
+          if [[ ! "$repo" =~ ^(api|client|manual)$ ]]; then
+            echo "unexpected source_repo" >&2
+            exit 1
+          fi
+          if [[ -n "$PAYLOAD_SOURCE_SHA" && ! "$PAYLOAD_SOURCE_SHA" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "source_sha is not a commit id" >&2
+            exit 1
+          fi
+
       # ------------------------------------------------------------------
       # 1. Checkout of the whole .github repository with all the sub-repositories
       # ------------------------------------------------------------------
