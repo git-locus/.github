@@ -115,6 +115,8 @@ services:
     environment:
       NODE_ENV: development
       NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      # Where the Next.js server reaches the API (link previews of ideas).
+      INTERNAL_API_URL: http://api:8000/api
     # Install dependencies (skipped if already present), then start the dev server
     command: sh -c "npm install && npm run dev"
     healthcheck:
