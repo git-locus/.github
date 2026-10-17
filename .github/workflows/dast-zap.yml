@@ -15,14 +15,6 @@ on:
   schedule:
     - cron: "0 2 * * 1"   # Monday 02:00 UTC (weekly)
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'Dockerfile'
-      - 'nginx/**'
-      - 'supervisord.conf'
-      - 'docker-compose.yml'
-      - 'scripts/**'
-      - '.github/workflows/dast-zap.yml'
 
 permissions:
   contents: read
@@ -31,6 +23,8 @@ jobs:
   zap:
     name: ZAP Baseline
     runs-on: ubuntu-latest
+    # The fallback mints the GitHub App token, whose key lives in this environment (only `main` may use it). For that reason the scan no longer runs on pull requests.
+    environment: production
     timeout-minutes: 30
     permissions:
       contents: read

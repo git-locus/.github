@@ -192,17 +192,27 @@ Dispatches coming from the `knowledge` repository are ignored.
 
 ### Required secrets and variables
 
-Configured in **this repository**, under Settings, Secrets and Variables:
+The secrets are configured in the **environment `production`** of this repository (Settings, Environments), not in the repository's own secrets: the environment is limited to the `main` branch, so a workflow on any other branch (a pull request, a test branch) cannot read them. The jobs of `deploy.yml` and `dast-zap.yml` declare `environment: production`.
 
 | Name | Type | Description |
 |---|---|---|
-| `APP_CLIENT_ID` | Secret | Client ID of the "locus-deploy-bot" GitHub App (installed on `api`, `client` and `docker2azure4student` with Contents: Read and write) |
-| `APP_PRIVATE_KEY` | Secret | Private key (.pem) of the same GitHub App |
-| `CONTAINER_REGISTRY_PASSWORD` | Secret | Password or token of the container registry |
-| `REGISTRY_LOGIN_SERVER` | Variable | For example `ghcr.io` |
-| `IMAGE_REGISTRY` | Variable | For example `ghcr.io/git-locus` |
-| `IMAGE_NAME` | Variable | For example `locus` |
-| `CONTAINER_REGISTRY_USERNAME` | Variable | Registry username |
+| `APP_CLIENT_ID` | Environment secret | Client ID of the "locus-deploy-bot" GitHub App (installed on `api`, `client` and `docker2azure4student` with Contents: Read and write; the workflow caps the token to that permission) |
+| `APP_PRIVATE_KEY` | Environment secret | Private key (.pem) of the same GitHub App. To rotate it: generate a new key in the App's settings, set the secret, delete the old key |
+| `CONTAINER_REGISTRY_USERNAME` | Environment secret | Registry username |
+| `CONTAINER_REGISTRY_PASSWORD` | Environment secret | Password or token of the container registry |
+| `REGISTRY_LOGIN_SERVER` | Environment secret | For example `ghcr.io` |
+| `IMAGE_REGISTRY` | Environment secret | For example `ghcr.io/git-locus` |
+| `IMAGE_NAME` | Environment secret | For example `locus` |
+| `DOMAIN` | Variable | The production domain probed by the ZAP scan |
+
+Set one with `gh secret set --env production --repo git-locus/.github NAME` (it asks for the value).
+
+### Protection of `main` and of the deploy
+
+- `main` has a ruleset: a pull request, the five jobs of the Security workflow passing, no force push, no deletion, **no bypass** (administrators included). Merge commits are the team's style and stay allowed.
+- Third-party actions must be pinned to a full commit SHA (a repository setting), workflows get a read-only token by default, and the deploy takes `source_repo` and `source_sha` of a dispatch only if they have the expected shape.
+- The ZAP scan does not run on pull requests: its fallback mints the App token, which a pull request must never reach.
+- `api` and `client` call this repository with `DEPLOY_PAT`, a personal access token stored in each of them. It should become the GitHub App's short-lived token, like the rest of the chain.
 
 `APP_ENV_VARS_B64` is not a secret of this repository: it lives in `docker2azure4student` and is used only to initialise `app-env-base` in Key Vault the very first time an environment is deployed (see below).
 

@@ -87,6 +87,8 @@ env:
 jobs:
   build-and-sync:
     runs-on: ubuntu-latest
+    # The secrets live in this environment, which only `main` may use: a workflow on any other branch cannot read them.
+    environment: production
     if: github.event.client_payload.source_repo != 'knowledge'
 
     steps:
