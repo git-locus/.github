@@ -178,6 +178,8 @@ push to main (api / client / .github)
                                        (docker pull with retries, then restart)
 ```
 
+`docker2azure4student` (the infrastructure repository) holds no code of its own: its two workflows call the public template [morph-eos/docker2azure4student](https://github.com/morph-eos/docker2azure4student) at a **fixed release** (`v1.0.0` today, set after the `@` in `.github/workflows/deploy-from-sync.yml` and `rollback.yml`). The Terraform that runs on a deploy is that release's; to take a newer one, read its release notes and change the version in both files (one pull request). A rollback of the infrastructure takes a tag of the template as `git_ref`.
+
 The workflow always rebuilds the image from `main` of **both** `api` and `client`: you cannot release only one of them. `deploy.yml` has a `concurrency` (`group: deploy-production`, `cancel-in-progress: false`), so two close dispatches queue instead of overlapping.
 
 ### Triggers
