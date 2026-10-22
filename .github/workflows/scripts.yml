@@ -1,0 +1,32 @@
+name: Scripts 🧪
+
+# Tests and lints the shell scripts shipped in the image (scripts/).
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - ".github/workflows/scripts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scripts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  digest-scheduler:
+    name: Digest scheduler 📬
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ShellCheck
+        run: shellcheck -x --source-path=SCRIPTDIR scripts/send-digest-loop.sh scripts/test-send-digest-loop.sh
+      - name: Tests (sh)
+        run: sh scripts/test-send-digest-loop.sh
+      - name: Tests (bash)
+        run: bash scripts/test-send-digest-loop.sh

@@ -135,9 +135,9 @@ COPY .github/nginx/security-headers.conf /etc/nginx/security-headers.conf
 # ---- Supervisor ----
 COPY .github/supervisord.conf /etc/supervisord.conf
 
-# ---- Init HTTPS ----
-COPY .github/scripts/init-https.sh /usr/local/bin/init-https.sh
-RUN chmod +x /usr/local/bin/init-https.sh
+# ---- Init HTTPS and the daily digest scheduler ----
+COPY .github/scripts/init-https.sh .github/scripts/send-digest-loop.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-https.sh /usr/local/bin/send-digest-loop.sh
 
 # ---- Static files (shared between Django and nginx) ----
 # Owned by the django user: collectstatic runs as django and must write here.
