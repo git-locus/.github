@@ -25,7 +25,7 @@ jobs:
         with:
           persist-credentials: false
       - name: ShellCheck
-        run: shellcheck -x scripts/send-digest-loop.sh scripts/test-send-digest-loop.sh
+        run: shellcheck -x --source-path=SCRIPTDIR scripts/send-digest-loop.sh scripts/test-send-digest-loop.sh
       - name: Tests (sh)
         run: sh scripts/test-send-digest-loop.sh
       - name: Tests (bash)
