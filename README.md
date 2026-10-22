@@ -17,7 +17,7 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
 ```
 .github/
 ├── Dockerfile              # Multi-stage build of the fullstack image
-├── supervisord.conf        # Supervisord: runs the API, the client, oauth2-proxy, nginx and certbot renewal
+├── supervisord.conf        # Supervisord: runs the API, the daily digest scheduler, the client, oauth2-proxy, nginx and certbot renewal
 ├── app.env.example         # Template of the production environment variables
 ├── docker-compose.yml      # Local development environment
 ├── nginx/
@@ -27,7 +27,9 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
 │   │                           # server block and `location /static/` of nginx.fullstack.conf
 │   └── nginx-acme.conf         # Temporary nginx config for the ACME challenge
 ├── scripts/
-│   └── init-https.sh       # Entrypoint: generates nginx.conf, gets the TLS certificate, starts supervisord
+│   ├── init-https.sh       # Entrypoint: generates nginx.conf, gets the TLS certificate, starts supervisord
+│   ├── send-digest-loop.sh # Daily digest scheduler (supervisord program `digest`)
+│   └── test-send-digest-loop.sh  # Tests of the scheduler, run by the Scripts workflow
 ├── CONTRIBUTING.md         # How to contribute (organization default)
 ├── SECURITY.md             # How to report a vulnerability (organization default)
 ├── CODE_OF_CONDUCT.md      # Code of conduct (organization default)
@@ -43,6 +45,7 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
     └── workflows/
         ├── deploy.yml      # Build and sync towards the Azure infrastructure
         ├── security.yml    # Security checks on this repository
+        ├── scripts.yml     # Tests and lints the shell scripts of the image
         ├── dast-zap.yml    # DAST scan (ZAP) of the compose stack
         └── site-health.yml # Periodic check of the site and its certificate in production
 ```
@@ -62,13 +65,22 @@ The `Dockerfile` is a **multi-stage** build:
 
 The image builds with Node 20 (`NODE_VERSION` in the Dockerfile). The local compose and CI use Node 26, because the client's test suite needs it.
 
-The final image runs five programs under supervisord:
+The final image runs six programs under supervisord:
 
 - `gunicorn`: the Django API on `127.0.0.1:8000` (loopback only, nginx talks to it that way),
+- `digest`: the daily digest scheduler (see below),
 - `node server.js`: standalone Next.js on `127.0.0.1:3000`,
 - `oauth2-proxy`: the single sign-on gate in front of `/admin/`, on `127.0.0.1:4180`,
 - `nginx`: the public reverse proxy, exposing `:8080` (HTTP to HTTPS redirect) and `:8081` (HTTPS),
 - `certbot-renew`: a loop that renews the TLS certificate.
+
+### Daily digest
+
+The digest e-mail needs no external scheduler: the `digest` program runs `scripts/send-digest-loop.sh`, which sleeps until `DIGEST_RUN_AT_UTC` (default `06:30`, that is 07:30 in winter and 08:30 in summer in Europe/Rome) and then runs `python manage.py send_digest` as the `django` user. The command sends at most one digest per person per calendar day, so a second run is harmless. A failed run is logged and the loop carries on with the next day.
+
+It is **off unless `DIGEST_ENABLED=1`** is in the container environment (`app-env-base`, see below): without it the program only sleeps and sends nothing. The time is plain UTC arithmetic, so the image needs no time zone database. A container that restarts across the run time skips that day, and the next digest covers it (the window reaches back to the previous digest, 48 hours at most). Output goes to the container logs.
+
+To check the scheduler without waiting for the time of day, run `sh scripts/test-send-digest-loop.sh`. To try the real command on one account, `python manage.py send_digest --dry-run --username <name>` inside the container counts what it would send and sends nothing.
 
 ### Exposed ports
 
@@ -289,6 +301,7 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md).
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `security.yml` | PR to `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL, HIGH, MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history with an allowlist) |
+| `scripts.yml` | PR touching `scripts/**`, `workflow_dispatch` | shellcheck and the tests of the digest scheduler (`scripts/test-send-digest-loop.sh`) under `sh` and `bash` |
 | `dast-zap.yml` | weekly cron, PR (on `Dockerfile` changes), `workflow_dispatch` | Starts the ephemeral docker compose stack and runs a ZAP baseline scan against `http://localhost:8080` |
 | `site-health.yml` | hourly cron (minute 7), `workflow_dispatch` | Checks that `https://$DOMAIN/landing` answers 200 and that the TLS certificate has at least 14 days of validity. If it fails, GitHub notifies about the failed workflow. It takes a few seconds and the repository is public, so it uses no paid minutes. It replaces a paid Azure availability test. |
 
