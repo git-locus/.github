@@ -2,7 +2,9 @@
 # Daily digest scheduler, run by supervisord (program `digest`) next to the
 # API. Once a day at DIGEST_RUN_AT_UTC it runs `manage.py send_digest`, which
 # e-mails each person what they missed (at most one digest per person per
-# calendar day, so an extra run is harmless).
+# calendar day, so an extra run is harmless), and then `manage.py send_weekly`,
+# the weekly discovery (at most one per person per calendar week, so the first
+# run of a week sends it and the other days do nothing).
 #
 # Off unless DIGEST_ENABLED=1: the process then just sleeps, so supervisord
 # has nothing to restart. The time is plain UTC arithmetic, no time zone
@@ -14,6 +16,7 @@ set -eu
 
 RUN_AT="${DIGEST_RUN_AT_UTC:-06:30}"
 COMMAND="${DIGEST_COMMAND:-python manage.py send_digest}"
+WEEKLY_COMMAND="${DIGEST_WEEKLY_COMMAND:-python manage.py send_weekly}"
 
 log() {
     echo "[send-digest-loop] $*"
@@ -36,15 +39,24 @@ seconds_until_next_run() {
     echo "$wait"
 }
 
-# A failing run is logged, never fatal: tomorrow's run must still happen.
-run_digest() {
-    log "running: $COMMAND"
+# A failing run is logged, never fatal: tomorrow's run must still happen, and
+# a failing digest must not keep the weekly discovery from running.
+run_command() {
+    log "running: $1"
     # shellcheck disable=SC2086  # the command is meant to be word-split
-    if $COMMAND; then
+    if $1; then
         log "done"
     else
         log "FAILED with status $?"
     fi
+}
+
+run_digest() {
+    run_command "$COMMAND"
+}
+
+run_weekly() {
+    run_command "$WEEKLY_COMMAND"
 }
 
 main() {
@@ -56,10 +68,11 @@ main() {
         log "DIGEST_RUN_AT_UTC must be HH:MM (24 hours), got '$RUN_AT'"
         exit 1
     fi
-    log "daily digest on, at $RUN_AT UTC"
+    log "daily digest and weekly discovery on, at $RUN_AT UTC"
     while true; do
         sleep "$(seconds_until_next_run $(( $(date -u +%s) % 86400 )))"
         run_digest
+        run_weekly
     done
 }
 

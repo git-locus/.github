@@ -68,19 +68,21 @@ The image builds with Node 20 (`NODE_VERSION` in the Dockerfile). The local comp
 The final image runs six programs under supervisord:
 
 - `gunicorn`: the Django API on `127.0.0.1:8000` (loopback only, nginx talks to it that way),
-- `digest`: the daily digest scheduler (see below),
+- `digest`: the daily digest and weekly discovery scheduler (see below),
 - `node server.js`: standalone Next.js on `127.0.0.1:3000`,
 - `oauth2-proxy`: the single sign-on gate in front of `/admin/`, on `127.0.0.1:4180`,
 - `nginx`: the public reverse proxy, exposing `:8080` (HTTP to HTTPS redirect) and `:8081` (HTTPS),
 - `certbot-renew`: a loop that renews the TLS certificate.
 
-### Daily digest
+### Daily digest and weekly discovery
 
 The digest e-mail needs no external scheduler: the `digest` program runs `scripts/send-digest-loop.sh`, which sleeps until `DIGEST_RUN_AT_UTC` (default `06:30`, that is 07:30 in winter and 08:30 in summer in Europe/Rome) and then runs `python manage.py send_digest` as the `django` user. The command sends at most one digest per person per calendar day, so a second run is harmless. A failed run is logged and the loop carries on with the next day.
 
+Right after the digest the same program runs `python manage.py send_weekly` (the weekly discovery e-mail, overridable with `DIGEST_WEEKLY_COMMAND`). That command sends at most one e-mail per person per calendar week in Europe/Rome, so the first run of a week sends it and the other days do nothing; a failing digest does not stop it. Both are switched on by the same `DIGEST_ENABLED=1`.
+
 It is **off unless `DIGEST_ENABLED=1`** is in the container environment (`app-env-base`, see below): without it the program only sleeps and sends nothing. The time is plain UTC arithmetic, so the image needs no time zone database. A container that restarts across the run time skips that day, and the next digest covers it (the window reaches back to the previous digest, 48 hours at most). Output goes to the container logs.
 
-To check the scheduler without waiting for the time of day, run `sh scripts/test-send-digest-loop.sh`. To try the real command on one account, `python manage.py send_digest --dry-run --username <name>` inside the container counts what it would send and sends nothing.
+To check the scheduler without waiting for the time of day, run `sh scripts/test-send-digest-loop.sh`. To try the real commands on one account, `python manage.py send_digest --dry-run --username <name>` and `python manage.py send_weekly --dry-run --username <name>` inside the container count what they would send and send nothing.
 
 ### Exposed ports
 
