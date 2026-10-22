@@ -68,6 +68,25 @@ case "$out" in
     *) check "the command keeps its arguments" "$out" "--flag value" ;;
 esac
 
+# --- run_weekly ---------------------------------------------------------------
+# shellcheck disable=SC2034  # WEEKLY_COMMAND is read by run_weekly
+WEEKLY_COMMAND="echo weekly --flag"
+out=$(run_weekly)
+case "$out" in
+    *"weekly --flag"*"] done") check "the weekly command runs with its arguments" ok ok ;;
+    *) check "the weekly command runs with its arguments" "$out" "weekly --flag ... done" ;;
+esac
+# shellcheck disable=SC2034
+WEEKLY_COMMAND="false"
+out=$(run_weekly); check "a failing weekly run returns" "$?" 0
+case "$out" in
+    *FAILED*) check "a failing weekly run is logged" ok ok ;;
+    *) check "a failing weekly run is logged" "$out" "FAILED" ;;
+esac
+check "the weekly command defaults to send_weekly" \
+    "$(DIGEST_LOOP_SOURCED=1 sh -c '. "$1"; echo "$WEEKLY_COMMAND"' sh "$HERE/send-digest-loop.sh")" \
+    "python manage.py send_weekly"
+
 # --- main -------------------------------------------------------------------
 out=$(DIGEST_RUN_AT_UTC=25:99 DIGEST_ENABLED=1 sh "$HERE/send-digest-loop.sh" 2>&1)
 check "a bad time exits 1" "$?" 1
@@ -97,7 +116,9 @@ exec "$real_sleep" 1
 FAKE
 chmod +x "$bin/sleep"
 sentinel="$bin/ran"
+weekly_sentinel="$bin/ran-weekly"
 PATH="$bin:$PATH" DIGEST_ENABLED=1 DIGEST_COMMAND="touch $sentinel" \
+    DIGEST_WEEKLY_COMMAND="touch $weekly_sentinel" \
     sh "$HERE/send-digest-loop.sh" >/dev/null 2>&1 &
 pid=$!
 "$real_sleep" 2.5
@@ -107,6 +128,19 @@ check "on: sleeps a bounded time first" \
     "$([ "${first:-0}" -ge 1 ] && [ "${first:-0}" -le 86400 ] && echo yes || echo no)" yes
 check "on: runs the command after sleeping" \
     "$([ -e "$sentinel" ] && echo ran || echo idle)" ran
+check "on: runs the weekly command after the digest" \
+    "$([ -e "$weekly_sentinel" ] && echo ran || echo idle)" ran
+
+# A failing digest must not keep the weekly discovery from running.
+failed_weekly="$bin/ran-after-failure"
+PATH="$bin:$PATH" DIGEST_ENABLED=1 DIGEST_COMMAND="false" \
+    DIGEST_WEEKLY_COMMAND="touch $failed_weekly" \
+    sh "$HERE/send-digest-loop.sh" >/dev/null 2>&1 &
+pid=$!
+"$real_sleep" 2.5
+kill "$pid" 2>/dev/null
+check "a failing digest does not stop the weekly run" \
+    "$([ -e "$failed_weekly" ] && echo ran || echo idle)" ran
 
 if [ "$failures" -ne 0 ]; then
     echo "$failures failure(s)"
