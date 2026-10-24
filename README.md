@@ -204,8 +204,6 @@ The workflow always rebuilds the image from `main` of **both** `api` and `client
 - a `repository_dispatch` of type `deploy` sent by `api` or `client` (their `notify-deploy.yml` has a similar `paths-ignore`, so documentation-only changes do not deploy),
 - a manual `workflow_dispatch` from the GitHub UI.
 
-Dispatches coming from the `knowledge` repository are ignored.
-
 ### Required secrets and variables
 
 The secrets are configured in the **environment `production`** of this repository (Settings, Environments), not in the repository's own secrets: the environment is limited to the `main` branch, so a workflow on any other branch (a pull request, a test branch) cannot read them. The jobs of `deploy.yml` and `dast-zap.yml` declare `environment: production`.
@@ -263,6 +261,32 @@ To add or change a variable:
    ```
 
 4. The change takes effect on the next deploy (the workflow rereads `app-env-base` on every run).
+
+### Web push keys (VAPID)
+
+Web push stays off while `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are unset: nothing is sent, devices cannot register and the client hides every push control. A maintainer generates the pair once and adds it to `app-env-base` with the procedure above. Never paste the private key in a repository, an issue or a chat.
+
+| Variable | Description |
+|---|---|
+| `VAPID_PUBLIC_KEY` | Public key, base64url text of the 65-byte point. The API gives it to browsers. |
+| `VAPID_PRIVATE_KEY` | Private key, base64url text of the raw 32-byte key. A secret. |
+| `VAPID_SUBJECT` | Contact the push services may use, `mailto:` or https. Defaults to `mailto:noreply@locus.now`. |
+
+To generate a pair, run this once in the `api` container (it prints both values; copy them straight into the secret and close the terminal):
+
+```python
+import base64
+from py_vapid import Vapid
+from cryptography.hazmat.primitives import serialization as ser
+
+key = Vapid()
+key.generate_keys()
+b64 = lambda raw: base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+print("VAPID_PRIVATE_KEY=" + b64(key.private_key.private_numbers().private_value.to_bytes(32, "big")))
+print("VAPID_PUBLIC_KEY=" + b64(key.public_key.public_bytes(ser.Encoding.X962, ser.PublicFormat.UncompressedPoint)))
+```
+
+Keep the same pair for good: changing it makes every existing browser subscription stop working until people turn push on again.
 
 ### Logs and memory in production
 

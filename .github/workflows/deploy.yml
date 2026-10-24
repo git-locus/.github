@@ -43,7 +43,7 @@ on:
         default: 'manual'
   # Push to main of the .github repository: the workflow starts ONLY if files that
   # affect the fullstack image or the workflow itself are touched. Changes to
-  # README, knowledge, agents, instructions and so on do NOT trigger a deploy.
+  # README, agents, instructions and so on do NOT trigger a deploy.
   # paths: applies only to the push trigger, not to repository_dispatch.
   push:
     branches:
@@ -89,7 +89,6 @@ jobs:
     runs-on: ubuntu-latest
     # The secrets live in this environment, which only `main` may use: a workflow on any other branch cannot read them.
     environment: production
-    if: github.event.client_payload.source_repo != 'knowledge'
 
     steps:
       # The dispatch payload comes from other repositories (a token can send anything): only the expected shapes go on.

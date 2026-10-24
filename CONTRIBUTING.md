@@ -8,7 +8,6 @@ Thanks for wanting to help. Locus ("the social network for ideas") is made of a 
 | `client` | Next.js web app |
 | `.github` | Build, nginx, local compose stack and the deploy pipeline |
 | `docker2azure4student` | Azure infrastructure (Terraform) |
-| `knowledge` | Operational guides and cross-repo documentation |
 
 Each repository has its own README with the details of its toolchain. Read it before changing that repository.
 
