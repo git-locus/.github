@@ -35,33 +35,22 @@ paths = [
 # Historical leak fingerprints (api repo only, kept in all repos for
 # parity so the same config can be copied between them).
 #
-# These credentials were committed to the api repository in 2023-2024
-# (the AWS / EC2 / self-managed Postgres era of the project). They
-# were REMOVED from the working tree in commit `393e266` (2023-12-17)
-# but remain in the git history.
-#
-# All of these credentials have been INVALIDATED by the Azure
-# migration of 2026-03-15 (commit `60c8139`):
-#   - The EC2 host (idealocus.xyz, 13.48.181.4) was decommissioned
-#   - The Postgres database is now Azure Database for PostgreSQL with
-#     a new password
-#   - SECRET_KEY and JWT_SECRET were re-rolled for the Azure deployment
-#     and are injected via App Service environment variables
-#
-# They are kept in the allowlist so gitleaks `--git` runs (pre-commit
-# are required to prevent the workflow from failing on rotated secrets.
-# CI runs scan the full history (`fetch-depth: 0`) so these allowlists
+# These commits of the early history contain credentials of environments
+# that no longer exist. The credentials were removed from the working tree
+# long ago and have been rotated and invalidated, but they remain in the
+# git history, which CI scans in full (`fetch-depth: 0`). The allowlist
+# keeps the history scan from failing on them.
 #
 # DO NOT add new fingerprints here without documenting WHY the secret
 # is no longer valid and WHEN it was rotated.
 # ----------------------------------------------------------------------
 [[allowlists]]
-description = "AWS/EC2 era credentials (rotated 2026-03-15 with Azure migration)"
+description = "Historical credentials in early commits (rotated, no longer valid)"
 commits = [
-  "665df208ea98bcea4a73c635fffb48318508a620",  # 2023-11-30 Server IP to env file
-  "904193df80b6cc4f3f1104dd592232bc9534e1c5",  # 2023-09-04 Updated gitignore
-  "a33240a0421fe2fe03b40f934742b60d74df27d4",  # 2024-01-14 Revert merge
-  "f03f34accda644d3c078b40e4791f6cec0f3b359",  # 2023-09-05 Implemented authentication app
+  "665df208ea98bcea4a73c635fffb48318508a620",
+  "904193df80b6cc4f3f1104dd592232bc9534e1c5",
+  "a33240a0421fe2fe03b40f934742b60d74df27d4",
+  "f03f34accda644d3c078b40e4791f6cec0f3b359",
 ]
 
 # Published SHA256 checksums of the oauth2-proxy release archives, pinned in

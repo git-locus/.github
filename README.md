@@ -232,32 +232,32 @@ Set one with `gh secret set --env production --repo git-locus/.github NAME` (it 
 
 ### Updating the production environment variables
 
-`app.env.example` in this repository stays the reference for **which** variables exist. Once an environment has been created, the current values no longer live in a GitHub secret: they live in the `app-env-base` secret of the Azure Key Vault (`locus-kv`), which the deploy workflow reads and reassembles on every run. Only two identities can read that Key Vault's secrets (access policy, not RBAC): the `locus-deploy` service principal (used by the pipeline through OIDC) and the `locus-vm` managed identity (read only, used by the VM). No human account has access by default.
+`app.env.example` in this repository stays the reference for **which** variables exist. Once an environment has been created, the current values no longer live in a GitHub secret: they live in the `app-env-base` secret of the Azure Key Vault of the environment, which the deploy workflow reads and reassembles on every run. Only two identities can read that Key Vault's secrets (access policy, not RBAC): the `locus-deploy` service principal (used by the pipeline through OIDC) and the `locus-vm` managed identity (read only, used by the VM). No human account has access by default.
 
 To add or change a variable:
 
 1. Whoever needs to do it gives themselves temporary access (this requires the Owner or Contributor role on the subscription):
 
    ```bash
-   az keyvault set-policy --name locus-kv --upn <your-email> \
+   az keyvault set-policy --name <key-vault-name> --upn <your-email> \
      --secret-permissions get list set
    ```
 
 2. Read, edit and rewrite `app-env-base`:
 
    ```bash
-   az keyvault secret show --vault-name locus-kv --name app-env-base \
+   az keyvault secret show --vault-name <key-vault-name> --name app-env-base \
      --query value -o tsv | base64 -d > .env
    # edit .env with an editor
    base64 -w0 .env > .env.b64
-   az keyvault secret set --vault-name locus-kv --name app-env-base --file .env.b64
+   az keyvault secret set --vault-name <key-vault-name> --name app-env-base --file .env.b64
    shred -u .env .env.b64
    ```
 
 3. Revoke the access as soon as you are done:
 
    ```bash
-   az keyvault delete-policy --name locus-kv --upn <your-email>
+   az keyvault delete-policy --name <key-vault-name> --upn <your-email>
    ```
 
 4. The change takes effect on the next deploy (the workflow rereads `app-env-base` on every run).
