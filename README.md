@@ -232,7 +232,7 @@ Set one with `gh secret set --env production --repo git-locus/.github NAME` (it 
 
 ### Updating the production environment variables
 
-`app.env.example` in this repository stays the reference for **which** variables exist. Once an environment has been created, the current values no longer live in a GitHub secret: they live in the `app-env-base` secret of the Azure Key Vault of the environment, which the deploy workflow reads and reassembles on every run. Only two identities can read that Key Vault's secrets (access policy, not RBAC): the `locus-deploy` service principal (used by the pipeline through OIDC) and the `locus-vm` managed identity (read only, used by the VM). No human account has access by default.
+`app.env.example` in this repository stays the reference for **which** variables exist. Once an environment has been created, the current values no longer live in a GitHub secret: they live in the `app-env-base` secret of the Azure Key Vault of the environment, which the deploy workflow reads and reassembles on every run. Only two identities can read that Key Vault's secrets (access policy, not RBAC): the `locus-deploy` service principal (used by the pipeline through OIDC) and the VM's managed identity (read only, used by the VM). No human account has access by default.
 
 To add or change a variable:
 
