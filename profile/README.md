@@ -38,6 +38,10 @@ never built alone.
 **04 · The Backers**: They recognize signals early, support with trust, resources, and belief, sometimes before the world
 is ready.
 
+## Open source
+
+Locus is free software under the [GNU Affero General Public License v3](https://github.com/git-locus/.github/blob/main/LICENSE). Use it, also commercially, run it for a course, a hackathon or inside your organization. If you modify it and run it as a service for other people, share your changes and keep the attribution. Forks must not present themselves as the official Locus: see the [name and logo policy](https://github.com/git-locus/.github/blob/main/TRADEMARKS.md).
+
 ## Stay in the loop
 
 - 🌐 [locus.now](https://locus.now)
