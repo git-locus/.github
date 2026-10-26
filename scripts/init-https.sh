@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-only
 # Run as the CMD of the container:
 # 1. Generate nginx.conf from the template (substitutes ${DOMAIN})
 # 2. Get the Let's Encrypt certificate (or a self-signed one as a fallback)

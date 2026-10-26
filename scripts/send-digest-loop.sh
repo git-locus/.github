@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-only
 # Daily digest scheduler, run by supervisord (program `digest`) next to the
 # API. Once a day at DIGEST_RUN_AT_UTC it runs `manage.py send_digest`, which
 # e-mails each person what they missed (at most one digest per person per

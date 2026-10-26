@@ -16,7 +16,7 @@ We aim to acknowledge a report within 5 days and to keep you updated until it is
 In scope:
 
 - the production site at `locus.now` and its API under `/api/`
-- the code in the `git-locus` repositories: `api`, `client`, `.github`, `docker2azure4student`
+- the code in the `git-locus` repositories: `api`, `client`, `.github`
 
 Out of scope:
 

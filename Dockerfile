@@ -131,6 +131,7 @@ RUN mkdir -p .next && chown nextjs:nodejs .next
 COPY .github/nginx/nginx.fullstack.conf /etc/nginx/nginx.template.conf
 COPY .github/nginx/nginx-acme.conf /etc/nginx/nginx-acme.conf
 COPY .github/nginx/security-headers.conf /etc/nginx/security-headers.conf
+COPY .github/nginx/security-csp.conf /etc/nginx/security-csp.conf
 
 # ---- Supervisor ----
 COPY .github/supervisord.conf /etc/supervisord.conf
