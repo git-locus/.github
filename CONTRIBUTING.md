@@ -60,4 +60,8 @@ Commit messages follow the conventional style already used in the history, for e
 
 ## Licensing
 
-The project license has not been chosen yet. For anything beyond a small fix, please discuss it in an issue before sending code.
+Locus is licensed under the [GNU Affero General Public License v3](LICENSE) (`AGPL-3.0-only`), with the attribution and origin terms of the [NOTICE](NOTICE) and the [name and logo policy](TRADEMARKS.md). By sending a contribution you agree that it is licensed under the same terms.
+
+Send only work that you wrote or that you have the right to send under that license. That includes pictures: follow the rule for adding them in the `client` repository (`docs/assets.md`).
+
+For anything beyond a small fix, please discuss it in an issue before sending code.

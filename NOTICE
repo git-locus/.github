@@ -1,0 +1,36 @@
+Locus
+Copyright (C) 2023-2026 The Locus contributors
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License, version 3 only, as
+published by the Free Software Foundation. It is distributed WITHOUT ANY
+WARRANTY. The full license text is in the file LICENSE.
+
+
+Additional terms (GNU AGPL v3, section 7)
+
+The following terms supplement the license, as section 7 permits.
+
+(b) Attribution. If you convey this program or a modified version of it, or
+run a modified version so that other people interact with it over a network,
+you must preserve this NOTICE file and the copyright notices in the source
+files. A modified version that runs as a public service must also show, in a
+reasonably visible place such as its footer or its about page, the sentence
+"Based on Locus" with a link to https://github.com/git-locus.
+
+(c) Origin. A modified version must be marked in reasonable ways as different
+from the original version, and must not be presented as the official Locus.
+
+(e) Names and logos. The license grants no right to use the name "Locus", the
+Locus logo or other brand assets as the name or brand of a product or service.
+You can use them to say truthfully that your work is based on Locus. See
+https://github.com/git-locus/.github/blob/main/TRADEMARKS.md.
+
+Running an unmodified copy for yourself, for a course, a workshop, a hackathon
+or inside your organization needs no attribution and no further action.
+
+
+Third-party material
+
+Dependencies keep their own licenses. Where a repository ships third-party
+files (for example fonts), the license text sits next to them.

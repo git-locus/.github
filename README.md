@@ -33,6 +33,9 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
 ├── CONTRIBUTING.md         # How to contribute (organization default)
 ├── SECURITY.md             # How to report a vulnerability (organization default)
 ├── CODE_OF_CONDUCT.md      # Code of conduct (organization default)
+├── LICENSE                 # GNU Affero General Public License v3
+├── NOTICE                  # Copyright, attribution and origin terms (AGPL section 7)
+├── TRADEMARKS.md           # Name and logo policy
 ├── agents/
 │   └── locus-platform-guardian.agent.md   # Development and review agent for the whole workspace
 ├── profile/
@@ -299,6 +302,12 @@ Where to look first when something is slow:
 1. Log Analytics, table `AppRequests`: duration and failures of the Django requests.
 2. The VM metrics in the portal (available memory), and `free -m` on the VM for swap.
 3. The host logs: `journalctl CONTAINER_NAME=app-service --since "2 days ago"` for nginx timings, 4xx/5xx responses and Next.js errors.
+
+---
+
+## License
+
+Locus is free software under the [GNU Affero General Public License v3](LICENSE) (`AGPL-3.0-only`), with the terms of the [NOTICE](NOTICE) and the [name and logo policy](TRADEMARKS.md). `api` and `client` carry the same license files.
 
 ---
 
