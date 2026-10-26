@@ -2,7 +2,7 @@
 
 Locus is the place for people to change the world - or their neighborhood.
 
-🚀 **Live in June 2026** · [Join the waitlist](https://locus.now)
+🚀 **Live in November 2026** · [Join the waitlist](https://locus.now)
 
 ## The Locus Manifesto
 
