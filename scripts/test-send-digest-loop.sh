@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-only
 # Tests for send-digest-loop.sh. Run: sh scripts/test-send-digest-loop.sh
 set -u
 

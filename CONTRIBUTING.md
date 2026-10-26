@@ -64,4 +64,6 @@ Locus is licensed under the [GNU Affero General Public License v3](LICENSE) (`AG
 
 Send only work that you wrote or that you have the right to send under that license. That includes pictures: follow the rule for adding them in the `client` repository (`docs/assets.md`).
 
+New source files start with the line `SPDX-License-Identifier: AGPL-3.0-only`, as a comment in the file's own syntax (the test suites of `api` and `client` check it).
+
 For anything beyond a small fix, please discuss it in an issue before sending code.
