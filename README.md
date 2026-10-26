@@ -46,7 +46,7 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
         ├── deploy.yml      # Build and sync towards the Azure infrastructure
         ├── security.yml    # Security checks on this repository
         ├── scripts.yml     # Tests and lints the shell scripts of the image
-        ├── dast-zap.yml    # DAST scan (ZAP) of the compose stack
+        ├── dast-zap.yml    # Weekly DAST scan (ZAP) of production, with the compose stack as fallback
         └── site-health.yml # Periodic check of the site and its certificate in production
 ```
 
@@ -328,7 +328,7 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md).
 |---|---|---|
 | `security.yml` | PR to `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL, HIGH, MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history with an allowlist) |
 | `scripts.yml` | PR touching `scripts/**`, `workflow_dispatch` | shellcheck and the tests of the digest scheduler (`scripts/test-send-digest-loop.sh`) under `sh` and `bash` |
-| `dast-zap.yml` | weekly cron, PR (on `Dockerfile` changes), `workflow_dispatch` | Starts the ephemeral docker compose stack and runs a ZAP baseline scan against `http://localhost:8080` |
+| `dast-zap.yml` | weekly cron (Monday), `workflow_dispatch` | Runs a ZAP baseline scan against production (`https://$DOMAIN`). If production does not answer, it starts the ephemeral docker compose stack of `api` and `client` (branch `dev`) and scans `http://localhost:8080` instead, and the run is flagged with an error. The JSON, HTML and Markdown reports are uploaded as the `zap_scan` artifact. The scan never fails the run on findings |
 | `site-health.yml` | hourly cron (minute 7), `workflow_dispatch` | Checks that `https://$DOMAIN/landing` answers 200 and that the TLS certificate has at least 14 days of validity. If it fails, GitHub notifies about the failed workflow. It takes a few seconds and the repository is public, so it uses no paid minutes. It replaces a paid Azure availability test. |
 
 The `api` and `client` repositories have similar `security.yml` workflows (bandit, semgrep, pip-audit or npm audit, CodeQL, trivy-fs, gitleaks). Every action used is pinned to a full commit SHA.
