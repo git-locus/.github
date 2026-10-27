@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - "scripts/**"
+      - "nginx/nginx.fullstack.conf"
       - ".github/workflows/scripts.yml"
   workflow_dispatch:
 
@@ -30,3 +31,17 @@ jobs:
         run: sh scripts/test-send-digest-loop.sh
       - name: Tests (bash)
         run: bash scripts/test-send-digest-loop.sh
+
+  nginx-blob-whitelist:
+    name: nginx blob URL whitelist 🧱
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ShellCheck
+        run: shellcheck -x scripts/test-nginx-blob-whitelist.sh
+      - name: Tests (sh)
+        run: sh scripts/test-nginx-blob-whitelist.sh
+      - name: Tests (bash)
+        run: bash scripts/test-nginx-blob-whitelist.sh
