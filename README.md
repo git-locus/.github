@@ -209,20 +209,20 @@ The workflow always rebuilds the image from `main` of **both** `api` and `client
 
 ### Required secrets and variables
 
-The secrets are configured in the **environment `production`** of this repository (Settings, Environments), not in the repository's own secrets: the environment is limited to the `main` branch, so a workflow on any other branch (a pull request, a test branch) cannot read them. The jobs of `deploy.yml` and `dast-zap.yml` declare `environment: production`.
+The secrets and variables are configured in the **environment `production`** of this repository (Settings, Environments), not at repository level: the environment is limited to the `main` branch, so a workflow on any other branch (a pull request, a test branch) cannot read them. The jobs of `deploy.yml` and `dast-zap.yml` declare `environment: production`.
 
 | Name | Type | Description |
 |---|---|---|
-| `APP_CLIENT_ID` | Environment secret | Client ID of the "locus-deploy-bot" GitHub App (installed on `api`, `client` and `docker2azure4student` with Contents: Read and write; the workflow caps the token to that permission) |
-| `APP_PRIVATE_KEY` | Environment secret | Private key (.pem) of the same GitHub App. To rotate it: generate a new key in the App's settings, set the secret, delete the old key |
-| `CONTAINER_REGISTRY_USERNAME` | Environment secret | Registry username |
-| `CONTAINER_REGISTRY_PASSWORD` | Environment secret | Password or token of the container registry |
-| `REGISTRY_LOGIN_SERVER` | Environment secret | For example `ghcr.io` |
-| `IMAGE_REGISTRY` | Environment secret | For example `ghcr.io/git-locus` |
-| `IMAGE_NAME` | Environment secret | For example `locus` |
-| `DOMAIN` | Variable | The production domain probed by the ZAP scan |
+| `APP_CLIENT_ID` | Environment variable | Client ID of the "locus-deploy-bot" GitHub App (installed on `api`, `client` and `docker2azure4student` with Contents: Read and write; the workflow caps the token to that permission) |
+| `APP_PRIVATE_KEY` | Environment secret | Private key (.pem) of the "locus-deploy-bot" GitHub App. To rotate it: generate a new key in the App's settings, set the secret, delete the old key |
+| `REGISTRY_LOGIN_SERVER` | Environment variable | For example `ghcr.io` |
+| `IMAGE_REGISTRY` | Environment variable | For example `ghcr.io/git-locus` |
+| `IMAGE_NAME` | Environment variable | For example `locus` |
+| `DOMAIN` | Repository variable | The production domain probed by the ZAP scan |
 
-Set one with `gh secret set --env production --repo git-locus/.github NAME` (it asks for the value).
+The image is pushed to the registry with the workflow's own `GITHUB_TOKEN` (`packages: write`), so no registry credential is stored: the package `locus` must grant this repository write access (package settings, Manage Actions access).
+
+Set a secret with `gh secret set --env production --repo git-locus/.github NAME` (it asks for the value) and a variable with `gh variable set --env production --repo git-locus/.github NAME --body VALUE`. Values that are not sensitive are variables: they show unmasked in the logs and are readable by anyone who can write to the repository.
 
 ### Protection of `main` and of the deploy
 
