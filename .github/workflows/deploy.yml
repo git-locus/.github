@@ -8,9 +8,12 @@
 #   - repository_dispatch → called by api and client on a push to main
 #   - workflow_dispatch   → manual deploy from the GitHub UI
 #
-# Secrets and variables: all in THIS repository (.github) → Settings → Secrets / Variables
+# Secrets and variables: all in the `production` environment of THIS repository (.github) → Settings → Environments
 #
 #   Secrets:
+#     APP_PRIVATE_KEY              Private key (.pem) of the GitHub App whose Client ID is APP_CLIENT_ID.
+#
+#   Variables:
 #     APP_CLIENT_ID                Client ID of the "locus-deploy-bot" GitHub App (or
 #                                  similar), installed on api, client,
 #                                  docker2azure4student with Contents: Read and
@@ -20,14 +23,9 @@
 #                                  and is not tied to a personal account. App settings
 #                                  → "Client ID" (not the numeric App ID, deprecated
 #                                  for this use).
-#     APP_PRIVATE_KEY              Private key (.pem) of the same GitHub App.
-#     CONTAINER_REGISTRY_PASSWORD Token or password for the container registry
-#
-#   Variables (Settings → Variables → Actions):
 #     REGISTRY_LOGIN_SERVER       for example ghcr.io
 #     IMAGE_REGISTRY              for example ghcr.io/git-locus
 #     IMAGE_NAME                  for example locus
-#     CONTAINER_REGISTRY_USERNAME Registry username
 
 name: Build & sync to Azure infra
 
@@ -123,7 +121,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510  # v3.3.0
         with:
-          client-id: ${{ secrets.APP_CLIENT_ID }}
+          client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: git-locus
           repositories: |
@@ -170,9 +168,9 @@ jobs:
       # pattern is the recommended practice.
       - name: Docker login
         env:
-          REGISTRY_PASSWORD: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
-          REGISTRY_USERNAME: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
-          REGISTRY_SERVER: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          REGISTRY_PASSWORD: ${{ github.token }}
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_SERVER: ${{ vars.REGISTRY_LOGIN_SERVER }}
         run: |
           echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_SERVER" \
             -u "$REGISTRY_USERNAME" --password-stdin
@@ -182,7 +180,7 @@ jobs:
         working-directory: build-context
         env:
           SHORT_SHA: ${{ github.event.client_payload.source_sha || github.sha }}
-          IMAGE_URI: ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}
+          IMAGE_URI: ${{ vars.IMAGE_REGISTRY }}/${{ vars.IMAGE_NAME }}
         run: |
           TAG="${SHORT_SHA:0:12}"
           FULL_URI="${IMAGE_URI}:${TAG}"
@@ -224,7 +222,7 @@ jobs:
           # The Dockerfile in the bundle only pulls the already built image:
           # the real build already happened in the previous step.
           cat > sync-bundle/Dockerfile <<EOF
-          FROM ${{ secrets.IMAGE_REGISTRY }}/${{ secrets.IMAGE_NAME }}:${IMAGE_TAG}
+          FROM ${{ vars.IMAGE_REGISTRY }}/${{ vars.IMAGE_NAME }}:${IMAGE_TAG}
           EOF
 
           cp manifest.json sync-bundle/manifest.json
