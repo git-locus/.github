@@ -11,6 +11,7 @@ failures=0
 
 # The pattern of the map entry that sets $blob_name; nginx and grep -P both
 # use PCRE syntax.
+# shellcheck disable=SC2016  # the $ is part of the nginx variable name
 PATTERN=$(sed -n 's/^ *"~\(.*\)" \$blob_name;$/\1/p' "$CONF")
 if [ -z "$PATTERN" ]; then
     echo "FAIL could not find the blob whitelist in $CONF"
