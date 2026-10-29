@@ -31,28 +31,6 @@ paths = [
   '''(.*/)?node_modules/.*''',
 ]
 
-# ----------------------------------------------------------------------
-# Historical leak fingerprints (api repo only, kept in all repos for
-# parity so the same config can be copied between them).
-#
-# These commits of the early history contain credentials of environments
-# that no longer exist. The credentials were removed from the working tree
-# long ago and have been rotated and invalidated, but they remain in the
-# git history, which CI scans in full (`fetch-depth: 0`). The allowlist
-# keeps the history scan from failing on them.
-#
-# DO NOT add new fingerprints here without documenting WHY the secret
-# is no longer valid and WHEN it was rotated.
-# ----------------------------------------------------------------------
-[[allowlists]]
-description = "Historical credentials in early commits (rotated, no longer valid)"
-commits = [
-  "665df208ea98bcea4a73c635fffb48318508a620",
-  "904193df80b6cc4f3f1104dd592232bc9534e1c5",
-  "a33240a0421fe2fe03b40f934742b60d74df27d4",
-  "f03f34accda644d3c078b40e4791f6cec0f3b359",
-]
-
 # Published SHA256 checksums of the oauth2-proxy release archives, pinned in
 # the Dockerfile and verified at build time. Public values, not secrets.
 [[allowlists]]
