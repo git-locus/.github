@@ -19,18 +19,22 @@ concurrency:
 
 jobs:
   digest-scheduler:
-    name: Digest scheduler 📬
+    name: Schedulers 📬
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
       - name: ShellCheck
-        run: shellcheck -x --source-path=SCRIPTDIR scripts/send-digest-loop.sh scripts/test-send-digest-loop.sh
+        run: shellcheck -x --source-path=SCRIPTDIR scripts/send-digest-loop.sh scripts/test-send-digest-loop.sh scripts/first-idea-dm-loop.sh scripts/test-first-idea-dm-loop.sh
       - name: Tests (sh)
-        run: sh scripts/test-send-digest-loop.sh
+        run: |
+          sh scripts/test-send-digest-loop.sh
+          sh scripts/test-first-idea-dm-loop.sh
       - name: Tests (bash)
-        run: bash scripts/test-send-digest-loop.sh
+        run: |
+          bash scripts/test-send-digest-loop.sh
+          bash scripts/test-first-idea-dm-loop.sh
 
   nginx-blob-whitelist:
     name: nginx blob URL whitelist 🧱
