@@ -29,12 +29,14 @@ for bad in "" 0 -5 1.5 5m ab " 300"; do
 done
 
 # --- run_command -------------------------------------------------------------
+# shellcheck disable=SC2034  # COMMAND is read by run_command
 COMMAND="echo --flag value"
 out=$(run_command)
 case "$out" in
     *"--flag value"*"] done") check "the command runs with its arguments" ok ok ;;
     *) check "the command runs with its arguments" "$out" "--flag value ... done" ;;
 esac
+# shellcheck disable=SC2034
 COMMAND="false"
 out=$(run_command); check "a failing run returns" "$?" 0
 case "$out" in
