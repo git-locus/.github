@@ -137,8 +137,8 @@ COPY .github/nginx/security-csp.conf /etc/nginx/security-csp.conf
 COPY .github/supervisord.conf /etc/supervisord.conf
 
 # ---- Init HTTPS and the daily digest scheduler ----
-COPY .github/scripts/init-https.sh .github/scripts/send-digest-loop.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/init-https.sh /usr/local/bin/send-digest-loop.sh
+COPY .github/scripts/init-https.sh .github/scripts/send-digest-loop.sh .github/scripts/first-idea-dm-loop.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-https.sh /usr/local/bin/send-digest-loop.sh /usr/local/bin/first-idea-dm-loop.sh
 
 # ---- Static files (shared between Django and nginx) ----
 # Owned by the django user: collectstatic runs as django and must write here.

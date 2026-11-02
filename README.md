@@ -29,7 +29,9 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
 ├── scripts/
 │   ├── init-https.sh       # Entrypoint: generates nginx.conf, gets the TLS certificate, starts supervisord
 │   ├── send-digest-loop.sh # Daily digest scheduler (supervisord program `digest`)
-│   └── test-send-digest-loop.sh  # Tests of the scheduler, run by the Scripts workflow
+│   ├── test-send-digest-loop.sh  # Tests of the scheduler, run by the Scripts workflow
+│   ├── first-idea-dm-loop.sh # First-idea message scheduler (supervisord program `first-idea-dm`)
+│   └── test-first-idea-dm-loop.sh  # Tests of that scheduler, run by the Scripts workflow
 ├── CONTRIBUTING.md         # How to contribute (organization default)
 ├── SECURITY.md             # How to report a vulnerability (organization default)
 ├── CODE_OF_CONDUCT.md      # Code of conduct (organization default)
@@ -86,6 +88,10 @@ Right after the digest the same program runs `python manage.py send_weekly` (the
 It is **off unless `DIGEST_ENABLED=1`** is in the container environment (`app-env-base`, see below): without it the program only sleeps and sends nothing. The time is plain UTC arithmetic, so the image needs no time zone database. A container that restarts across the run time skips that day, and the next digest covers it (the window reaches back to the previous digest, 48 hours at most). Output goes to the container logs.
 
 To check the scheduler without waiting for the time of day, run `sh scripts/test-send-digest-loop.sh`. To try the real commands on one account, `python manage.py send_digest --dry-run --username <name>` and `python manage.py send_weekly --dry-run --username <name>` inside the container count what they would send and send nothing.
+
+### First-idea message
+
+The `first-idea-dm` program runs `scripts/first-idea-dm-loop.sh`, which every `FIRST_IDEA_DM_INTERVAL` seconds (default `300`) runs `python manage.py send_first_idea_dms` as the `django` user. The command sends the Locus Team private message to each author whose first idea is at least ten minutes old, once per person, so an extra run is harmless. A failed run is logged and the loop carries on. It is **off unless `FIRST_IDEA_DM_ENABLED=1`** is in the container environment (`app-env-base`); it also needs `LOCUS_TEAM_USERNAME`, the account that writes the message. Without them the program only sleeps. `sh scripts/test-first-idea-dm-loop.sh` checks the scheduler; `python manage.py send_first_idea_dms --dry-run --username <name>` inside the container counts what it would send.
 
 ### Exposed ports
 
@@ -339,7 +345,7 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md).
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `security.yml` | PR to `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL, HIGH, MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history with an allowlist) |
-| `scripts.yml` | PR touching `scripts/**`, `workflow_dispatch` | shellcheck and the tests of the digest scheduler (`scripts/test-send-digest-loop.sh`) under `sh` and `bash` |
+| `scripts.yml` | PR touching `scripts/**`, `workflow_dispatch` | shellcheck and the tests of the digest and first-idea schedulers (`scripts/test-send-digest-loop.sh`, `scripts/test-first-idea-dm-loop.sh`) under `sh` and `bash` |
 | `dast-zap.yml` | weekly cron (Monday), `workflow_dispatch` | Runs a ZAP baseline scan against production (`https://$DOMAIN`). If production does not answer, it starts the ephemeral docker compose stack of `api` and `client` (branch `dev`) and scans `http://localhost:8080` instead, and the run is flagged with an error. The JSON, HTML and Markdown reports are uploaded as the `zap_scan` artifact. The scan never fails the run on findings |
 | `site-health.yml` | hourly cron (minute 7), `workflow_dispatch` | Checks that `https://$DOMAIN/landing` answers 200 and that the TLS certificate has at least 14 days of validity. If it fails, GitHub notifies about the failed workflow. It takes a few seconds and the repository is public, so it uses no paid minutes. It replaces a paid Azure availability test. |
 
