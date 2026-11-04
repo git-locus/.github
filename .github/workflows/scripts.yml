@@ -49,3 +49,17 @@ jobs:
         run: sh scripts/test-nginx-blob-whitelist.sh
       - name: Tests (bash)
         run: bash scripts/test-nginx-blob-whitelist.sh
+
+  nginx-bare-redirects:
+    name: nginx bare path redirects 🧭
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ShellCheck
+        run: shellcheck -x scripts/test-nginx-bare-redirects.sh
+      - name: Tests (sh)
+        run: sh scripts/test-nginx-bare-redirects.sh
+      - name: Tests (bash)
+        run: bash scripts/test-nginx-bare-redirects.sh
