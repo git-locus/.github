@@ -297,6 +297,10 @@ print("VAPID_PUBLIC_KEY=" + b64(key.public_key.public_bytes(ser.Encoding.X962, s
 
 Keep the same pair for good: changing it makes every existing browser subscription stop working until people turn push on again.
 
+### Reserved usernames key
+
+`USERNAME_RESERVATION_KEY` is required: the API refuses to start without it. It is the key of the HMAC that keeps the username of a deleted account reserved without storing the name. Generate it once with `openssl rand -base64 48` and add it to `app-env-base` with the procedure above. Never paste it in a repository, an issue or a chat. Keep the same value for good: changing or losing it releases every reserved name, which is the only consequence (nobody is locked out).
+
 ### Logs and memory in production
 
 On every deploy, `docker2azure4student` prepares the VM (2 GiB of swap with `vm.swappiness=10`, persistent journald capped at 300 MB) and starts the container with the `journald` log driver, so the nginx, Next.js and Django logs survive the `docker rm` of the next deploy. Gunicorn recycles its workers (`--max-requests` with jitter, see `api/entrypoint.sh`). An Azure Monitor alert e-mails the subscription Owners when the VM's available memory falls below a threshold. Details are in the Observability section of the `docker2azure4student` README.
