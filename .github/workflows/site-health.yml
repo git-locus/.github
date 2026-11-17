@@ -5,7 +5,7 @@ name: Site health 🩺
 # and GitHub sends the failed workflow notification.
 #
 # Uses the DOMAIN variable (Repository -> Settings -> Variables -> Actions).
-# /landing answers 200 directly, without redirects.
+# The home page (/) answers 200 directly, without redirects.
 
 on:
   schedule:
@@ -34,7 +34,7 @@ jobs:
             echo "::error::vars.DOMAIN is not configured"
             exit 1
           fi
-          url="https://${DOMAIN}/landing"
+          url="https://${DOMAIN}/"
           code=$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 10 --max-time 20 \
             --retry 2 --retry-delay 5 --retry-all-errors "$url" || true)
           echo "GET ${url} -> ${code}"

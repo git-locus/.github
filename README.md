@@ -25,6 +25,7 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
 │   ├── nginx.fullstack.conf    # nginx template for the production container
 │   ├── security-headers.conf   # Shared security headers, included by both the HTTPS
 │   │                           # server block and `location /static/` of nginx.fullstack.conf
+│   ├── security-csp.conf       # Baseline Content-Security-Policy for what nginx and Django answer
 │   └── nginx-acme.conf         # Temporary nginx config for the ACME challenge
 ├── scripts/
 │   ├── init-https.sh       # Entrypoint: generates nginx.conf, gets the TLS certificate, starts supervisord
@@ -33,7 +34,9 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
 │   ├── first-idea-dm-loop.sh # First-idea message scheduler (supervisord program `first-idea-dm`)
 │   ├── test-first-idea-dm-loop.sh  # Tests of that scheduler, run by the Scripts workflow
 │   ├── scheduled-publish-loop.sh # Scheduled ideas publisher (supervisord program `scheduled-publish`)
-│   └── test-scheduled-publish-loop.sh  # Tests of that publisher, run by the Scripts workflow
+│   ├── test-scheduled-publish-loop.sh  # Tests of that publisher, run by the Scripts workflow
+│   ├── test-nginx-bare-redirects.sh    # Checks that every gated path answers its bare form with an absolute redirect
+│   └── test-nginx-blob-whitelist.sh    # Checks the whitelist of blob URLs nginx may fetch for avatars
 ├── CONTRIBUTING.md         # How to contribute (organization default)
 ├── SECURITY.md             # How to report a vulnerability (organization default)
 ├── CODE_OF_CONDUCT.md      # Code of conduct (organization default)
@@ -54,6 +57,7 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
         ├── security.yml    # Security checks on this repository
         ├── scripts.yml     # Tests and lints the shell scripts of the image
         ├── dast-zap.yml    # Weekly DAST scan (ZAP) of production, with the compose stack as fallback
+        ├── scorecard.yml   # OpenSSF Scorecard of the repository (runs once it is public)
         └── site-health.yml # Periodic check of the site and its certificate in production
 ```
 
@@ -209,7 +213,7 @@ push to main (api / client / .github)
                                        (docker pull with retries, then restart)
 ```
 
-`docker2azure4student` (the infrastructure repository) holds no code of its own: its two workflows call the public template [morph-eos/docker2azure4student](https://github.com/morph-eos/docker2azure4student) at a **fixed release** (`v1.0.0` today, set after the `@` in `.github/workflows/deploy-from-sync.yml` and `rollback.yml`). The Terraform that runs on a deploy is that release's; to take a newer one, read its release notes and change the version in both files (one pull request). A rollback of the infrastructure takes a tag of the template as `git_ref`.
+`docker2azure4student` (the infrastructure repository) holds no code of its own: its two workflows call the public template [morph-eos/docker2azure4student](https://github.com/morph-eos/docker2azure4student) at a **fixed release** (the `@vX.Y.Z` tag after the repository name in `.github/workflows/deploy-from-sync.yml` and `rollback.yml`). The Terraform that runs on a deploy is that release's; to take a newer one, read its release notes and change the version in both files (one pull request). A rollback of the infrastructure takes a tag of the template as `git_ref`.
 
 The workflow always rebuilds the image from `main` of **both** `api` and `client`: you cannot release only one of them. `deploy.yml` has a `concurrency` (`group: deploy-production`, `cancel-in-progress: false`), so two close dispatches queue instead of overlapping.
 
@@ -358,8 +362,8 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md).
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `security.yml` | PR to `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL, HIGH, MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history with an allowlist) |
-| `scripts.yml` | PR touching `scripts/**`, `workflow_dispatch` | shellcheck and the tests of the digest, first-idea and scheduled ideas schedulers (`scripts/test-send-digest-loop.sh`, `scripts/test-first-idea-dm-loop.sh`, `scripts/test-scheduled-publish-loop.sh`) under `sh` and `bash` |
+| `scripts.yml` | PR touching `scripts/**`, `workflow_dispatch` | shellcheck and the tests of the digest, first-idea and scheduled ideas schedulers (`scripts/test-send-digest-loop.sh`, `scripts/test-first-idea-dm-loop.sh`, `scripts/test-scheduled-publish-loop.sh`) under `sh` and `bash`, plus the two nginx checks (`scripts/test-nginx-blob-whitelist.sh`, `scripts/test-nginx-bare-redirects.sh`) |
 | `dast-zap.yml` | weekly cron (Monday), `workflow_dispatch` | Runs a ZAP baseline scan against production (`https://$DOMAIN`). If production does not answer, it starts the ephemeral docker compose stack of `api` and `client` (branch `dev`) and scans `http://localhost:8080` instead, and the run is flagged with an error. The JSON, HTML and Markdown reports are uploaded as the `zap_scan` artifact. The scan never fails the run on findings |
-| `site-health.yml` | hourly cron (minute 7), `workflow_dispatch` | Checks that `https://$DOMAIN/landing` answers 200 and that the TLS certificate has at least 14 days of validity. If it fails, GitHub notifies about the failed workflow. It takes a few seconds and the repository is public, so it uses no paid minutes. It replaces a paid Azure availability test. |
+| `site-health.yml` | hourly cron (minute 7), `workflow_dispatch` | Checks that `https://$DOMAIN/` answers 200 and that the TLS certificate has at least 14 days of validity. If it fails, GitHub notifies about the failed workflow. It takes a few seconds and the repository is public, so it uses no paid minutes. It replaces a paid Azure availability test. |
 
 The `api` and `client` repositories have similar `security.yml` workflows (bandit, semgrep, pip-audit or npm audit, CodeQL, trivy-fs, gitleaks). Every action used is pinned to a full commit SHA.
