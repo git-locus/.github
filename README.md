@@ -17,7 +17,7 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
 ```
 .github/
 ├── Dockerfile              # Multi-stage build of the fullstack image
-├── supervisord.conf        # Supervisord: runs the API, the daily digest scheduler, the client, oauth2-proxy, nginx and certbot renewal
+├── supervisord.conf        # Supervisord: runs the API, the digest, first-idea and scheduled ideas schedulers, the client, oauth2-proxy, nginx and certbot renewal
 ├── app.env.example         # Template of the production environment variables
 ├── docker-compose.yml      # Local development environment
 ├── nginx/
@@ -31,7 +31,9 @@ If you want to contribute, start from [CONTRIBUTING.md](CONTRIBUTING.md).
 │   ├── send-digest-loop.sh # Daily digest scheduler (supervisord program `digest`)
 │   ├── test-send-digest-loop.sh  # Tests of the scheduler, run by the Scripts workflow
 │   ├── first-idea-dm-loop.sh # First-idea message scheduler (supervisord program `first-idea-dm`)
-│   └── test-first-idea-dm-loop.sh  # Tests of that scheduler, run by the Scripts workflow
+│   ├── test-first-idea-dm-loop.sh  # Tests of that scheduler, run by the Scripts workflow
+│   ├── scheduled-publish-loop.sh # Scheduled ideas publisher (supervisord program `scheduled-publish`)
+│   └── test-scheduled-publish-loop.sh  # Tests of that publisher, run by the Scripts workflow
 ├── CONTRIBUTING.md         # How to contribute (organization default)
 ├── SECURITY.md             # How to report a vulnerability (organization default)
 ├── CODE_OF_CONDUCT.md      # Code of conduct (organization default)
@@ -70,10 +72,12 @@ The `Dockerfile` is a **multi-stage** build:
 
 The image builds with Node 20 (`NODE_VERSION` in the Dockerfile). The local compose and CI use Node 26, because the client's test suite needs it.
 
-The final image runs six programs under supervisord:
+The final image runs eight programs under supervisord:
 
 - `gunicorn`: the Django API on `127.0.0.1:8000` (loopback only, nginx talks to it that way),
 - `digest`: the daily digest and weekly discovery scheduler (see below),
+- `first-idea-dm`: the first-idea message scheduler (see below),
+- `scheduled-publish`: the scheduled ideas publisher (see below),
 - `node server.js`: standalone Next.js on `127.0.0.1:3000`,
 - `oauth2-proxy`: the single sign-on gate in front of `/admin/`, on `127.0.0.1:4180`,
 - `nginx`: the public reverse proxy, exposing `:8080` (HTTP to HTTPS redirect) and `:8081` (HTTPS),
@@ -92,6 +96,10 @@ To check the scheduler without waiting for the time of day, run `sh scripts/test
 ### First-idea message
 
 The `first-idea-dm` program runs `scripts/first-idea-dm-loop.sh`, which every `FIRST_IDEA_DM_INTERVAL` seconds (default `300`) runs `python manage.py send_first_idea_dms` as the `django` user. The command sends the Locus Team private message to each author whose first idea is at least ten minutes old, once per person, so an extra run is harmless. A failed run is logged and the loop carries on. It is **off unless `FIRST_IDEA_DM_ENABLED=1`** is in the container environment (`app-env-base`); it also needs `LOCUS_TEAM_USERNAME`, the account that writes the message. Without them the program only sleeps. `sh scripts/test-first-idea-dm-loop.sh` checks the scheduler; `python manage.py send_first_idea_dms --dry-run --username <name>` inside the container counts what it would send.
+
+### Scheduled ideas
+
+The `scheduled-publish` program runs `scripts/scheduled-publish-loop.sh`, which every `SCHEDULED_PUBLISH_INTERVAL` seconds (default `60`) runs `python manage.py publish_scheduled` as the `django` user. The command publishes the queued ideas whose time has come, through the normal publishing path, and tells their authors. A run starts only when the previous one has ended, so runs of the loop never overlap (and the command is safe to run twice at once anyway); a run that takes longer than `SCHEDULED_PUBLISH_TIMEOUT` seconds (default `300`) is cut. A failed run is logged and the loop carries on. It is **off unless `SCHEDULED_PUBLISH_ENABLED=1`** is in the container environment (`app-env-base`): without it the program only sleeps, so a deploy never starts it by itself, and ideas people queue wait until it is switched on. `sh scripts/test-scheduled-publish-loop.sh` checks the loop.
 
 ### Exposed ports
 
@@ -346,7 +354,7 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md).
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `security.yml` | PR to `main`, weekly cron, `workflow_dispatch` | hadolint, trivy-config (CRITICAL, HIGH, MEDIUM), shellcheck, actionlint, zizmor, gitleaks (full history with an allowlist) |
-| `scripts.yml` | PR touching `scripts/**`, `workflow_dispatch` | shellcheck and the tests of the digest and first-idea schedulers (`scripts/test-send-digest-loop.sh`, `scripts/test-first-idea-dm-loop.sh`) under `sh` and `bash` |
+| `scripts.yml` | PR touching `scripts/**`, `workflow_dispatch` | shellcheck and the tests of the digest, first-idea and scheduled ideas schedulers (`scripts/test-send-digest-loop.sh`, `scripts/test-first-idea-dm-loop.sh`, `scripts/test-scheduled-publish-loop.sh`) under `sh` and `bash` |
 | `dast-zap.yml` | weekly cron (Monday), `workflow_dispatch` | Runs a ZAP baseline scan against production (`https://$DOMAIN`). If production does not answer, it starts the ephemeral docker compose stack of `api` and `client` (branch `dev`) and scans `http://localhost:8080` instead, and the run is flagged with an error. The JSON, HTML and Markdown reports are uploaded as the `zap_scan` artifact. The scan never fails the run on findings |
 | `site-health.yml` | hourly cron (minute 7), `workflow_dispatch` | Checks that `https://$DOMAIN/landing` answers 200 and that the TLS certificate has at least 14 days of validity. If it fails, GitHub notifies about the failed workflow. It takes a few seconds and the repository is public, so it uses no paid minutes. It replaces a paid Azure availability test. |
 
