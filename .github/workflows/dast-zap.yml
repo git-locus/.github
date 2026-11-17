@@ -50,7 +50,7 @@ jobs:
           fi
 
           PROD_URL="https://${DOMAIN}"
-          if curl -fsSk --connect-timeout 10 --max-time 20 "${PROD_URL}/landing" >/dev/null 2>&1; then
+          if curl -fsSk --connect-timeout 10 --max-time 20 "${PROD_URL}/" >/dev/null 2>&1; then
             echo "Production reachable at ${PROD_URL}"
             echo "target=prod" >> "$GITHUB_OUTPUT"
             echo "url=${PROD_URL}" >> "$GITHUB_OUTPUT"
