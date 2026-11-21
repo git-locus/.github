@@ -11,5 +11,6 @@
 - [ ] Tests added or updated, and the whole suite of every touched repository passes
 - [ ] Documentation updated where this change makes it stale
 - [ ] No secrets, real personal data or internal addresses in the diff
+- [ ] No photograph (pictures are admin slots, see CONTRIBUTING) and no real names in tests, fixtures or docs
 - [ ] No weakening of authentication, permissions or validation
 - [ ] The pull request targets `dev`

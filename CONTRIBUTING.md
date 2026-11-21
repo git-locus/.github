@@ -50,6 +50,7 @@ Commit messages follow the conventional style already used in the history, for e
   - `client`: `npm run test:ci` and `npm run lint`
 - **Documentation.** If the change makes a README or another document stale (endpoints, environment variables, UI flows, architecture decisions), update it in the same pull request.
 - **A look at the UI.** For any visible change, run the app and check the page yourself, including empty, loading and error states. Screenshots in the pull request help reviewers.
+- **No photographs and no real people.** Pictures are not committed: a page that needs one gets a placeholder slot (`client/src/lib/landingMedia.js`) and the real file is uploaded from the admin. Tests, fixtures and docs use made-up names and `example.*` addresses, never real ones. Two tests (`client/src/lib/__tests__/repoHygiene.test.js` and `api/src/tests/test_repo_hygiene.py`) fail when a picture or a real identifier slips in. Do not attach screenshots or files with real people or copyrighted pictures to issues and pull requests either.
 - **No weakening of security.** Do not loosen authentication, CSRF, permissions or password validation, and do not turn on `DEBUG` or add wildcard origins in production settings.
 
 ## Style
